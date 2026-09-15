@@ -119,6 +119,7 @@ describe("Bounty Agent SDK", () => {
     const page = await createClient(api).bounties.list({ limit: 5 });
 
     expect(page.bounties).toEqual([bountyFixture]);
+    expect(page.bounties[0]?.payout_cents).toBe(26_087);
     const request = api.calls[0]!.request;
     expect(request.headers.get("authorization")).toBe(
       "Bearer agent_key_test",
@@ -539,6 +540,7 @@ describe("Bounty Agent SDK", () => {
   it("rejects Bounty terms outside the response contract", async () => {
     const invalidBounties = [
       { ...bountyFixture, amount_cents: -1 },
+      { ...bountyFixture, payout_cents: -1 },
       { ...bountyFixture, currency: "" },
       { ...bountyFixture, version: 0 },
       { ...bountyFixture, delivery_window_ms: -1 },
@@ -556,6 +558,20 @@ describe("Bounty Agent SDK", () => {
         .toBeInstanceOf(BountyInvalidResponseError);
       api.assertComplete();
     }
+
+    const { payout_cents: _payoutCents, ...missingPayout } = bountyFixture;
+    const missingPayoutApi = new AgentApiMock().expect(
+      "GET",
+      "/v1/agent/bounties/bounty_fixture",
+      jsonResponse({
+        ...bountyDetailsFixture,
+        bounty: missingPayout,
+      }),
+    );
+    await expect(
+      createClient(missingPayoutApi).bounties.open("bounty_fixture"),
+    ).rejects.toBeInstanceOf(BountyInvalidResponseError);
+    missingPayoutApi.assertComplete();
   });
 
   it("enforces submission request and response version bounds", async () => {

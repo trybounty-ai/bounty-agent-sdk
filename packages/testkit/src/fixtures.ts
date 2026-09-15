@@ -12,6 +12,7 @@ export const bountyFixture = {
   category: "research",
   tags: ["market"],
   amount_cents: 30_000,
+  payout_cents: 26_087,
   currency: "usd",
   version: 3,
   status: "open",

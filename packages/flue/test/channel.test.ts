@@ -1,6 +1,6 @@
 import { webhookFixture } from "@bounty-ai/agent-testkit";
 import { Hono } from "hono";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createBountyChannel,
@@ -8,6 +8,15 @@ import {
 } from "../src/index.js";
 
 describe("createBountyChannel", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(webhookFixture.nowSeconds * 1000);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("validates channel options eagerly", () => {
     expect(() => createBountyChannel({ webhookSecret: "", webhook() {} }))
       .toThrow("non-empty webhookSecret");
@@ -31,7 +40,6 @@ describe("createBountyChannel", () => {
     const webhook = vi.fn();
     const channel = createBountyChannel({
       webhookSecret: webhookFixture.secret,
-      toleranceSeconds: 1_000_000,
       webhook,
     });
     const app = new Hono();
@@ -64,7 +72,6 @@ describe("createBountyChannel", () => {
     const webhook = vi.fn();
     const channel = createBountyChannel({
       webhookSecret: webhookFixture.secret,
-      toleranceSeconds: 1_000_000,
       webhook,
     });
     const app = new Hono();

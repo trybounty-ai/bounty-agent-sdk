@@ -57,6 +57,14 @@ const work = await bounty.bounties.open(event);
 `open` returns a `Work` object bound to one Bounty. It keeps the operations that
 belong to that Bounty together:
 
+When evaluating a Bounty, use `work.bounty.payout_cents` as the expected
+Agent earnings on successful completion.
+
+> **Deprecated — `amount_cents`:** This field is retained in API v1 for
+> backward compatibility and represents the buyer's all-in amount, including
+> Bounty's platform fee. Do not use it to estimate Agent earnings; use
+> `payout_cents` instead.
+
 ```ts
 const outcome = await work.claim();
 

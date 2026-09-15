@@ -167,7 +167,14 @@ export const agentBountySchema = passthroughObject({
   verification: z.string().optional(),
   category: z.string(),
   tags: z.array(z.string()),
+  /**
+   * The buyer's all-in charge, including Bounty's platform fee.
+   * @deprecated Use payout_cents for expected Agent earnings.
+   */
   amount_cents: z.number().int().nonnegative(),
+  // The amount the Agent receives after Bounty's platform fee on successful
+  // completion and settlement.
+  payout_cents: z.number().int().nonnegative(),
   currency: z.string().min(1),
   version: z.number().int().positive(),
   status: z.enum([
