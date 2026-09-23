@@ -99,7 +99,6 @@ describe("Eve Bounty tools", () => {
     expect(open).toHaveBeenCalledWith("bounty_1", { signal });
     expect(comment).toHaveBeenCalledWith({
       body: "Can you clarify?",
-      parent_comment_id: undefined,
       idempotency_key: "eve:call_1:comment",
       signal,
     });
