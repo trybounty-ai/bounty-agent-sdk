@@ -5,8 +5,10 @@ import Bounty, {
   BountyTimeoutError,
   BountyUploadError,
   BountyWebhookError,
+  formatAgentEvent,
   isAgentEvent,
   verifyWebhook,
+  type AgentEvent,
   type BountyOptions,
 } from "@bounty-ai/agent-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -660,6 +662,26 @@ describe("Bounty Agent SDK", () => {
     api.assertComplete();
   });
 
+  it("downloads an owner's message file without opening the Bounty", async () => {
+    const api = new AgentApiMock().expect(
+      "GET",
+      "/v1/agent/messages/message_fixture/attachments/file_fixture",
+      (request) => {
+        expect(request.headers.get("authorization")).toBe(
+          "Bearer agent_key_test",
+        );
+        return new Response("owner file");
+      },
+    );
+
+    const response = await createClient(api).attachments.downloadMessageFile(
+      "message_fixture",
+      "file_fixture",
+    );
+    expect(await response.text()).toBe("owner file");
+    api.assertComplete();
+  });
+
   it("keeps timeout and cancellation active for streamed downloads", async () => {
     const caller = new AbortController();
     const reason = new Error("stop download");
@@ -1089,5 +1111,136 @@ describe("Bounty Agent SDK", () => {
       baseURL: "http://api.example.test",
       dangerouslyAllowInsecureConnection: true,
     })).not.toThrow();
+  });
+});
+
+const conversationEvent = {
+  id: "evt_conversation",
+  version: 1,
+  occurredAt: "2026-09-23T00:00:00.000Z",
+  agentId: "agent_fixture",
+} as const;
+
+describe("formatAgentEvent", () => {
+  it("renders an owner message with its text and files", () => {
+    const event: AgentEvent = {
+      ...conversationEvent,
+      subject: { type: "message", id: "message_fixture" },
+      type: "work.message.created",
+      data: {
+        bounty_id: "bounty_fixture",
+        message_id: "message_fixture",
+        message: {
+          ...agentMessageFixture,
+          author_type: "user",
+          user_id: "user_fixture",
+          content: { type: "text", text: "Please include Q3." },
+          parts: [
+            { type: "text", text: "Please include Q3." },
+            {
+              type: "file",
+              attachment_id: "file_fixture",
+              filename: "q3.csv",
+              content_type: "text/csv",
+              size: 120,
+            },
+          ],
+        },
+      },
+    };
+
+    expect(formatAgentEvent(event)).toBe([
+      "<bounty_message>",
+      "audience: private",
+      "bounty_id: bounty_fixture",
+      "event_id: evt_conversation",
+      "message_id: message_fixture",
+      "sender_type: bounty_owner",
+      "<content>",
+      "Please include Q3.",
+      "</content>",
+      "<attachments>",
+      "- q3.csv (text/csv, 120 bytes, attachment_id: file_fixture)",
+      "</attachments>",
+      "</bounty_message>",
+    ].join("\n"));
+  });
+
+  it("renders an owner reply with the comment it answers", () => {
+    const event: AgentEvent = {
+      ...conversationEvent,
+      subject: { type: "bounty", id: "bounty_fixture" },
+      type: "discussion.user_replied",
+      data: {
+        bounty_id: "bounty_fixture",
+        comment_id: "comment_reply",
+        parent_comment_id: "comment_question",
+        comment: {
+          _id: "comment_reply",
+          parent_comment_id: "comment_question",
+          author: { type: "bounty_owner" },
+          body: "Use the account timezone.",
+          created_at: 2,
+          updated_at: 2,
+        },
+        parent_comment: {
+          _id: "comment_question",
+          author: {
+            type: "agent",
+            agent_id: "agent_fixture",
+            name: "Patchwork",
+            verified: true,
+            rating_average: 5,
+          },
+          body: "UTC or the account timezone?",
+          created_at: 1,
+          updated_at: 1,
+        },
+      },
+    };
+
+    expect(formatAgentEvent(event)).toBe([
+      "<bounty_comment>",
+      "audience: public",
+      "bounty_id: bounty_fixture",
+      "event_id: evt_conversation",
+      "comment_id: comment_reply",
+      "parent_comment_id: comment_question",
+      "sender_type: bounty_owner",
+      "<in_reply_to>",
+      "UTC or the account timezone?",
+      "</in_reply_to>",
+      "<content>",
+      "Use the account timezone.",
+      "</content>",
+      "</bounty_comment>",
+    ].join("\n"));
+  });
+
+  it("says where to read content that an older event does not carry", () => {
+    const text = formatAgentEvent({
+      ...conversationEvent,
+      subject: { type: "message", id: "message_fixture" },
+      type: "work.message.created",
+      data: { bounty_id: "bounty_fixture", message_id: "message_fixture" },
+    });
+
+    expect(text).toContain(
+      "content: not included in this event; read the Bounty's private messages",
+    );
+    expect(text).not.toContain("<content>");
+  });
+
+  it("renders other events with their data", () => {
+    expect(formatAgentEvent(webhookFixture.event)).toBe([
+      "<bounty_event>",
+      "type: bounty.available",
+      "bounty_id: bounty_fixture",
+      "event_id: evt_fixture",
+      "<data>",
+      '{"bounty_id":"bounty_fixture","bounty_version":3,"reason":"automatic"}',
+      "</data>",
+      "</bounty_event>",
+    ].join("\n"));
   });
 });

@@ -1,3 +1,4 @@
+import { formatAgentEvent } from "@bounty-ai/agent-sdk";
 import { createBountyChannel } from "@bounty-ai/flue";
 import { dispatch } from "@flue/runtime";
 
@@ -14,7 +15,7 @@ export const channel = createBountyChannel({
       message: {
         kind: "signal",
         type: event.type,
-        body: JSON.stringify(event.data),
+        body: formatAgentEvent(event),
         attributes: { deliveryId, bountyId },
       },
     });
