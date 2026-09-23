@@ -57,6 +57,7 @@ for (const packageDirectory of packageDirectories) {
     packages.push({
       name: manifest.name,
       version: manifest.version,
+      directory: packageDirectory,
       tag,
       publish: false,
     });
@@ -83,6 +84,7 @@ for (const packageDirectory of packageDirectories) {
   packages.push({
     name: manifest.name,
     version: manifest.version,
+    directory: packageDirectory,
     tag,
     publish: true,
     tarball,
