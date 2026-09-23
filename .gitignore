@@ -6,6 +6,7 @@ release-artifacts/
 .output/
 **/.eve/cache/
 **/.eve/agent-summary.json
+**/.eve-extension-build-*/
 *.tsbuildinfo
 .env
 .env.*
