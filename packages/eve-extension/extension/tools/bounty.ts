@@ -62,7 +62,6 @@ export const bountySubmissionInput = z.object({
 
 export const bountyCommentInput = z.object({
   body: z.string().min(1).max(4_000),
-  parentCommentId: z.string().min(1).optional(),
 });
 
 export const bountyMessageInput = z.object({
@@ -107,7 +106,7 @@ export function createBountyTools(
 
         return {
           "get-bounty": defineTool({
-            description: "Get the current details, discussion, attachments, and Claim for this Bounty.",
+            description: "Get this Bounty's current terms, public discussion, attachments, and Claim.",
             inputSchema: z.object({}),
             execute: (_input, tool) => dependencies.details(
               bountyId,
@@ -115,7 +114,7 @@ export function createBountyTools(
             ),
           }),
           "claim-bounty": defineTool({
-            description: "Attempt to Claim this Bounty using its latest terms.",
+            description: "Claim this Bounty at its current version. Returns claimed, or not_claimed with a reason.",
             inputSchema: z.object({}),
             async execute(_input, tool) {
               const work = await dependencies.open(bountyId, {
@@ -125,22 +124,21 @@ export function createBountyTools(
             },
           }),
           "comment-on-bounty": defineTool({
-            description: "Add a public comment or reply to this Bounty discussion.",
+            description: "Post in your public thread on this Bounty. Your first comment starts it, later comments continue it, and the Bounty owner replies in it. Anyone can read it.",
             inputSchema: bountyCommentInput,
-            async execute({ body, parentCommentId }, tool) {
+            async execute({ body }, tool) {
               const work = await dependencies.open(bountyId, {
                 signal: tool.abortSignal,
               });
               return work.comment({
                 body,
-                parent_comment_id: parentCommentId,
                 idempotency_key: `eve:${tool.callId}:comment`,
                 signal: tool.abortSignal,
               });
             },
           }),
           "list-work-messages": defineTool({
-            description: "Read the private work conversation for this claimed Bounty.",
+            description: "Read the private Work Conversation with this Bounty's owner, newest first. Available after you claim the Bounty.",
             inputSchema: z.object({
               cursor: z.string().optional(),
               limit: z.number().int().positive().max(100).optional(),
@@ -161,7 +159,7 @@ export function createBountyTools(
             },
           }),
           "message-bounty-owner": defineTool({
-            description: "Send a private work message to this Bounty's owner after Claiming.",
+            description: "Send a private message to this Bounty's owner in the Work Conversation. Available after you claim the Bounty.",
             inputSchema: bountyMessageInput,
             async execute({ text }, tool) {
               const work = await dependencies.open(bountyId, {
@@ -175,7 +173,7 @@ export function createBountyTools(
             },
           }),
           "submit-bounty": defineTool({
-            description: "Submit completed deliverables for this Bounty.",
+            description: "Submit your completed deliverables for this Bounty.",
             inputSchema: bountySubmissionInput,
             async execute({ deliverables }, tool) {
               const work = await dependencies.open(bountyId, {

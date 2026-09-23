@@ -21,6 +21,12 @@ from `main`. It defaults to a dry run. Turn off **dry_run** only when the packag
 contents and versions are ready. Releases use the npm `beta` tag, so they do not
 replace `latest`.
 
+After publishing, the workflow tags each package version, such as
+`@bounty-ai/agent-sdk@0.2.0-beta.2`, and creates a GitHub Release whose notes
+are that version's section of the package's `CHANGELOG.md`. Prerelease
+versions are marked as prereleases. Re-running the workflow skips existing
+tags and Releases.
+
 The packages remain pre-1.0 while their public interfaces settle. Changesets is
 in `beta` prerelease mode, so version pull requests continue the prerelease
 sequence instead of promoting a package to a stable release. Leave prerelease
@@ -55,3 +61,11 @@ publisher for Flue and log out of the temporary npm session.
 The workflow publishes through the npm CLI, which supports OIDC and automatic
 provenance. pnpm is still used to create each tarball so workspace dependency
 ranges are converted correctly before publication.
+
+## Deferred
+
+- Consider publishing through `changesets/action`, which creates tags and
+  GitHub Releases itself. Adopt it only if it can keep the current isolation:
+  npm publishing in a minimal OIDC job with lifecycle scripts disabled, and
+  repository write access only in the final tag job. Until then, the tag job
+  creates the same Releases with `gh release create`.

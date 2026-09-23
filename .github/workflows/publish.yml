@@ -124,3 +124,28 @@ jobs:
         run: |
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push --follow-tags
+      - name: Create GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -r '.packages[] | [.name, .version, .directory] | @tsv' release-artifacts/release-manifest.json |
+            while IFS=$'\t' read -r name version directory; do
+              tag="${name}@${version}"
+              if gh release view "$tag" >/dev/null 2>&1; then
+                continue
+              fi
+              awk -v heading="## ${version}" '
+                $0 == heading { found = 1; next }
+                found && /^## / { exit }
+                found { print }
+              ' "${directory}/CHANGELOG.md" > release-notes.md
+              prerelease=()
+              if [[ "$version" == *-* ]]; then
+                prerelease=(--prerelease)
+              fi
+              gh release create "$tag" --verify-tag --title "$tag" \
+                --notes-file release-notes.md "${prerelease[@]}"
+            done

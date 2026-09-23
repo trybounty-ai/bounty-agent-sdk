@@ -1,7 +1,9 @@
 import {
   BountyWebhookError,
   getBountyId,
+  isAgentEvent,
   type AgentEvent,
+  type AgentMessage,
 } from "@bounty-ai/agent-sdk";
 import { defineChannel, POST } from "eve/channels";
 import { z } from "zod";
@@ -24,6 +26,86 @@ export interface BountyChannelDependencies {
 const defaultDependencies: BountyChannelDependencies = {
   verify: (request) => bountyClient().webhooks.verify(request),
 };
+
+function formatBlock(
+  tag: string,
+  fields: ReadonlyArray<readonly [string, string]>,
+  sections: ReadonlyArray<readonly [string, string]>,
+) {
+  return [
+    `<${tag}>`,
+    ...fields.map(([key, value]) => `${key}: ${value}`),
+    ...sections.flatMap(([section, body]) => [`<${section}>`, body, `</${section}>`]),
+    `</${tag}>`,
+  ].join("\n");
+}
+
+function messageSections(message: AgentMessage) {
+  const text = message.parts
+    .flatMap((part) => part.type === "text" ? [part.text] : [])
+    .join("\n\n");
+  const files = message.parts.flatMap((part) =>
+    part.type === "file"
+      ? [`- ${part.filename} (${part.content_type}, ${part.size} bytes, attachment_id: ${part.attachment_id})`]
+      : []
+  );
+  return [
+    ...(text ? [["content", text] as const] : []),
+    ...(files.length > 0 ? [["attachments", files.join("\n")] as const] : []),
+  ];
+}
+
+export function formatBountyEvent(event: AgentEvent, bountyId: string) {
+  if (isAgentEvent(event, "work.message.created")) {
+    const { message } = event.data;
+    return formatBlock(
+      "bounty_message",
+      [
+        ["audience", "private"],
+        ["bounty_id", bountyId],
+        ["event_id", event.id],
+        ["message_id", event.data.message_id],
+        ["sender_type", "bounty_owner"],
+        ...(message
+          ? []
+          : [["content", "not included in this event; read it with list-work-messages"] as const]),
+      ],
+      message ? messageSections(message) : [],
+    );
+  }
+  if (isAgentEvent(event, "discussion.user_replied")) {
+    const { comment, parent_comment: parentComment } = event.data;
+    return formatBlock(
+      "bounty_comment",
+      [
+        ["audience", "public"],
+        ["bounty_id", bountyId],
+        ["event_id", event.id],
+        ["comment_id", event.data.comment_id],
+        ...(event.data.parent_comment_id
+          ? [["parent_comment_id", event.data.parent_comment_id] as const]
+          : []),
+        ["sender_type", "bounty_owner"],
+        ...(comment
+          ? []
+          : [["content", "not included in this event; read it with get-bounty"] as const]),
+      ],
+      [
+        ...(parentComment ? [["in_reply_to", parentComment.body] as const] : []),
+        ...(comment ? [["content", comment.body] as const] : []),
+      ],
+    );
+  }
+  return formatBlock(
+    "bounty_event",
+    [
+      ["type", event.type],
+      ["bounty_id", bountyId],
+      ["event_id", event.id],
+    ],
+    [["data", JSON.stringify(event.data)]],
+  );
+}
 
 export function createBountyChannel(
   dependencies: BountyChannelDependencies = defaultDependencies,
@@ -60,13 +142,7 @@ export function createBountyChannel(
           ].join(":");
           const parsedTitle = eventTitleSchema.safeParse(event.data.title);
           const session = await from(address).send(
-            [
-              `Bounty event: ${event.type}`,
-              `Bounty ID: ${bountyId}`,
-              `Event ID: ${event.id}`,
-              "Open the current Bounty state before deciding what to do.",
-              `Event data: ${JSON.stringify(event.data)}`,
-            ].join("\n"),
+            formatBountyEvent(event, bountyId),
             {
               auth: null,
               state: { agentId: event.agentId, bountyId },
