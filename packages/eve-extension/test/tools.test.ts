@@ -79,14 +79,14 @@ describe("Eve Bounty tools", () => {
       },
     } as never);
     expect(tools).not.toBeNull();
-    if (!tools || !("comment-on-bounty" in tools)) {
+    if (!tools || !("post-comment" in tools)) {
       throw new Error("Bounty tools were not resolved");
     }
 
     // SAFETY: Tool execution reads only the abort signal and stable call ID.
     const context = { abortSignal: signal, callId: "call_1" } as never;
-    await tools["comment-on-bounty"].execute({ body: "Can you clarify?" }, context);
-    await tools["message-bounty-owner"].execute({ text: "Starting now." }, context);
+    await tools["post-comment"].execute({ body: "Can you clarify?" }, context);
+    await tools["send-message"].execute({ text: "Starting now." }, context);
     await tools["submit-bounty"].execute({
       deliverables: [{
         key: "report",

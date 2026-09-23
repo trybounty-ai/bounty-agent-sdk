@@ -1,9 +1,10 @@
 import {
   BountyWebhookError,
+  formatAgentEvent,
   getBountyId,
   isAgentEvent,
   type AgentEvent,
-  type AgentMessage,
+  type CallOptions,
 } from "@bounty-ai/agent-sdk";
 import { defineChannel, POST } from "eve/channels";
 import { z } from "zod";
@@ -18,98 +19,86 @@ interface BountyChannelState {
 export type BountyChannelContext = Record<keyof BountyChannelState, string>;
 
 const eventTitleSchema = z.string().min(1);
+const BOUNTY_FILE_URL_PROTOCOL = "bounty-file:";
+const MAX_HANDLED_EVENTS = 10_000;
 
 export interface BountyChannelDependencies {
   verify(request: Request): Promise<AgentEvent>;
+  downloadMessageFile(
+    messageId: string,
+    attachmentId: string,
+    options?: CallOptions,
+  ): Promise<Response>;
 }
 
 const defaultDependencies: BountyChannelDependencies = {
   verify: (request) => bountyClient().webhooks.verify(request),
+  downloadMessageFile: (messageId, attachmentId, options) =>
+    bountyClient().attachments.downloadMessageFile(messageId, attachmentId, options),
 };
 
-function formatBlock(
-  tag: string,
-  fields: ReadonlyArray<readonly [string, string]>,
-  sections: ReadonlyArray<readonly [string, string]>,
-) {
-  return [
-    `<${tag}>`,
-    ...fields.map(([key, value]) => `${key}: ${value}`),
-    ...sections.flatMap(([section, body]) => [`<${section}>`, body, `</${section}>`]),
-    `</${tag}>`,
-  ].join("\n");
+// Owner files travel as `bounty-file:` URLs so Eve stages them into the
+// session sandbox through `fetchFile`, which holds the Bounty API key.
+function bountyFileUrl(messageId: string, attachmentId: string) {
+  return new URL(
+    `${BOUNTY_FILE_URL_PROTOCOL}${encodeURIComponent(messageId)}/${encodeURIComponent(attachmentId)}`,
+  );
 }
 
-function messageSections(message: AgentMessage) {
-  const text = message.parts
-    .flatMap((part) => part.type === "text" ? [part.text] : [])
-    .join("\n\n");
-  const files = message.parts.flatMap((part) =>
+function parseBountyFileUrl(value: string) {
+  if (!value.startsWith(BOUNTY_FILE_URL_PROTOCOL)) return null;
+  const [messageId, attachmentId, ...rest] = value
+    .slice(BOUNTY_FILE_URL_PROTOCOL.length)
+    .split("/");
+  if (!messageId || !attachmentId || rest.length > 0) return null;
+  return {
+    messageId: decodeURIComponent(messageId),
+    attachmentId: decodeURIComponent(attachmentId),
+  };
+}
+
+export function createBountyFetchFile(
+  downloadMessageFile: BountyChannelDependencies["downloadMessageFile"],
+) {
+  return async (url: string) => {
+    const file = parseBountyFileUrl(url);
+    if (!file) return null;
+    const response = await downloadMessageFile(file.messageId, file.attachmentId);
+    if (!response.ok) {
+      throw new Error(`Bounty file download returned HTTP ${response.status}`);
+    }
+    const bytes = Buffer.from(await response.arrayBuffer());
+    const mediaType = response.headers.get("content-type");
+    return mediaType ? { bytes, mediaType } : { bytes };
+  };
+}
+
+function turnMessage(event: AgentEvent) {
+  const text = formatAgentEvent(event);
+  if (!isAgentEvent(event, "work.message.created") || !event.data.message) {
+    return text;
+  }
+  const messageId = event.data.message_id;
+  const files = event.data.message.parts.flatMap((part) =>
     part.type === "file"
-      ? [`- ${part.filename} (${part.content_type}, ${part.size} bytes, attachment_id: ${part.attachment_id})`]
+      ? [{
+          type: "file" as const,
+          data: bountyFileUrl(messageId, part.attachment_id),
+          filename: part.filename,
+          mediaType: part.content_type,
+        }]
       : []
   );
-  return [
-    ...(text ? [["content", text] as const] : []),
-    ...(files.length > 0 ? [["attachments", files.join("\n")] as const] : []),
-  ];
-}
-
-export function formatBountyEvent(event: AgentEvent, bountyId: string) {
-  if (isAgentEvent(event, "work.message.created")) {
-    const { message } = event.data;
-    return formatBlock(
-      "bounty_message",
-      [
-        ["audience", "private"],
-        ["bounty_id", bountyId],
-        ["event_id", event.id],
-        ["message_id", event.data.message_id],
-        ["sender_type", "bounty_owner"],
-        ...(message
-          ? []
-          : [["content", "not included in this event; read it with list-work-messages"] as const]),
-      ],
-      message ? messageSections(message) : [],
-    );
-  }
-  if (isAgentEvent(event, "discussion.user_replied")) {
-    const { comment, parent_comment: parentComment } = event.data;
-    return formatBlock(
-      "bounty_comment",
-      [
-        ["audience", "public"],
-        ["bounty_id", bountyId],
-        ["event_id", event.id],
-        ["comment_id", event.data.comment_id],
-        ...(event.data.parent_comment_id
-          ? [["parent_comment_id", event.data.parent_comment_id] as const]
-          : []),
-        ["sender_type", "bounty_owner"],
-        ...(comment
-          ? []
-          : [["content", "not included in this event; read it with get-bounty"] as const]),
-      ],
-      [
-        ...(parentComment ? [["in_reply_to", parentComment.body] as const] : []),
-        ...(comment ? [["content", comment.body] as const] : []),
-      ],
-    );
-  }
-  return formatBlock(
-    "bounty_event",
-    [
-      ["type", event.type],
-      ["bounty_id", bountyId],
-      ["event_id", event.id],
-    ],
-    [["data", JSON.stringify(event.data)]],
-  );
+  return files.length === 0 ? text : [{ type: "text" as const, text }, ...files];
 }
 
 export function createBountyChannel(
   dependencies: BountyChannelDependencies = defaultDependencies,
 ) {
+  // Like Eve's Slack channel, skip redeliveries this instance already
+  // accepted. This is best-effort; it does not span server instances.
+  const handledEventIds = new Set<string>();
+
   return defineChannel<
     BountyChannelState,
     void,
@@ -121,6 +110,7 @@ export function createBountyChannel(
       bountyId: "",
     },
     metadata: ({ agentId, bountyId }) => ({ agentId, bountyId }),
+    fetchFile: createBountyFetchFile(dependencies.downloadMessageFile),
     routes: [
       POST("/webhooks/bounty", async (request, { from }) => {
         try {
@@ -133,6 +123,19 @@ export function createBountyChannel(
               { status: 202 },
             );
           }
+          if (handledEventIds.has(event.id)) {
+            return Response.json(
+              { accepted: true, duplicate: true },
+              { status: 202 },
+            );
+          }
+          handledEventIds.add(event.id);
+          if (handledEventIds.size > MAX_HANDLED_EVENTS) {
+            for (const eventId of handledEventIds) {
+              if (handledEventIds.size <= MAX_HANDLED_EVENTS / 2) break;
+              handledEventIds.delete(eventId);
+            }
+          }
 
           const address = [
             "agent",
@@ -141,16 +144,19 @@ export function createBountyChannel(
             encodeURIComponent(bountyId),
           ].join(":");
           const parsedTitle = eventTitleSchema.safeParse(event.data.title);
-          const session = await from(address).send(
-            formatBountyEvent(event, bountyId),
-            {
+          let session;
+          try {
+            session = await from(address).send(turnMessage(event), {
               auth: null,
               state: { agentId: event.agentId, bountyId },
               title: parsedTitle.success
                 ? parsedTitle.data
                 : `Bounty ${bountyId}`,
-            },
-          );
+            });
+          } catch (error) {
+            handledEventIds.delete(event.id);
+            throw error;
+          }
 
           return Response.json({ accepted: true, sessionId: session.id }, {
             status: 202,
