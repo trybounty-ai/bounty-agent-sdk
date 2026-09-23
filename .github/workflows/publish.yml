@@ -1,6 +1,11 @@
 name: Publish packages
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - packages/agent-sdk/package.json
+      - packages/flue/package.json
   workflow_dispatch:
     inputs:
       dry_run:

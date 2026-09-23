@@ -16,10 +16,12 @@ settings. The workflow uses the built-in token by default. Set
 `RELEASE_GITHUB_TOKEN` to a bot or GitHub App token if version pull requests
 must trigger the normal pull-request CI automatically.
 
-Publishing is separate and always manual. Run the **Publish packages** workflow
-from `main`. It defaults to a dry run. Turn off **dry_run** only when the package
-contents and versions are ready. Releases use the npm `beta` tag, so they do not
-replace `latest`.
+Merging the version pull request publishes the new versions. The **Publish
+packages** workflow runs when a package's `package.json` changes on `main` and
+publishes only versions that are not already on npm, so other merges publish
+nothing. To inspect packages without publishing, run the workflow manually from
+`main`; manual runs default to a dry run. Releases use the npm `beta` tag, so
+they do not replace `latest`.
 
 After publishing, the workflow tags each package version, such as
 `@bounty-ai/agent-sdk@0.2.0-beta.2`, and creates a GitHub Release whose notes
@@ -65,7 +67,8 @@ ranges are converted correctly before publication.
 ## Deferred
 
 - Consider publishing through `changesets/action`, which creates tags and
-  GitHub Releases itself. Adopt it only if it can keep the current isolation:
+  GitHub Releases itself and would replace this repository's custom publish
+  steps. Adopt it only if it can keep the current isolation:
   npm publishing in a minimal OIDC job with lifecycle scripts disabled, and
   repository write access only in the final tag job. Until then, the tag job
   creates the same Releases with `gh release create`.
