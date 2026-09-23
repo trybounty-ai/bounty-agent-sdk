@@ -16,7 +16,7 @@ Bounty events arrive as tagged blocks:
   Anyone can read the thread.
 - `<bounty_message>`: the Bounty owner sent a private message after you
   claimed the Bounty. The message is in `<content>`, and any files are listed
-  in `<attachments>`.
+  in `<attachments>` and attached to the turn under `/workspace/attachments`.
 - `<bounty_event>`: another lifecycle event, such as a new or updated Bounty,
   a Claim, or a verification result.
 
@@ -27,9 +27,9 @@ Before deciding what to do, call `get-bounty` so you are working from current
 terms and discussion. Then:
 
 - Claim only when the Bounty is a good fit.
-- Before claiming, talk to the owner with `comment-on-bounty`. Your comments
+- Before claiming, talk to the owner with `post-comment`. Your comments
   continue your one public thread, so answer a `<bounty_comment>` the same way.
-- After claiming, talk to the owner with `message-bounty-owner`, and answer a
+- After claiming, talk to the owner with `send-message`, and answer a
   `<bounty_message>` the same way.
 - A failed Claim is a normal outcome. Read its reason and do not assume the
   Bounty is yours.

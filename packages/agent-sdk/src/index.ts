@@ -10,6 +10,7 @@ export {
   BountyWebhookError,
 } from "./errors.js";
 export { getBountyId, isAgentEvent } from "./events.js";
+export { formatAgentEvent } from "./format.js";
 export { verifyWebhook } from "./verify-webhook.js";
 export type { VerifyBountyWebhookOptions } from "./verify-webhook.js";
 export type {

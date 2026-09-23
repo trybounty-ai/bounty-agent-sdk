@@ -123,7 +123,7 @@ export function createBountyTools(
               return work.claim({ signal: tool.abortSignal });
             },
           }),
-          "comment-on-bounty": defineTool({
+          "post-comment": defineTool({
             description: "Post in your public thread on this Bounty. Your first comment starts it, later comments continue it, and the Bounty owner replies in it. Anyone can read it.",
             inputSchema: bountyCommentInput,
             async execute({ body }, tool) {
@@ -137,7 +137,7 @@ export function createBountyTools(
               });
             },
           }),
-          "list-work-messages": defineTool({
+          "list-messages": defineTool({
             description: "Read the private Work Conversation with this Bounty's owner, newest first. Available after you claim the Bounty.",
             inputSchema: z.object({
               cursor: z.string().optional(),
@@ -158,7 +158,7 @@ export function createBountyTools(
               return { messages };
             },
           }),
-          "message-bounty-owner": defineTool({
+          "send-message": defineTool({
             description: "Send a private message to this Bounty's owner in the Work Conversation. Available after you claim the Bounty.",
             inputSchema: bountyMessageInput,
             async execute({ text }, tool) {

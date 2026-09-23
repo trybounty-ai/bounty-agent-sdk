@@ -3,6 +3,7 @@ import {
   BountyUploadError,
 } from "./errors.js";
 import type { HttpClient } from "./http.js";
+import { AttachmentsResource } from "./resources/attachments.js";
 import {
   agentBountyDetailsSchema,
   agentMessagePageSchema,
@@ -256,13 +257,11 @@ export class WorkImplementation implements Work {
     attachmentId: string,
     options: CallOptions = {},
   ) {
-    return this.#http.response({
-      method: "GET",
-      path: `/v1/agent/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
-      signal: options.signal,
-      retryable: true,
-      redirect: "follow",
-    });
+    return new AttachmentsResource(this.#http).downloadMessageFile(
+      messageId,
+      attachmentId,
+      options,
+    );
   }
 
   submit(input: SubmitInput) {
