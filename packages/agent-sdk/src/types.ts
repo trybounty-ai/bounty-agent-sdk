@@ -96,6 +96,10 @@ export interface VerifyWebhookOptions {
 
 export interface CommentInput extends CallOptions {
   body: string;
+  /**
+   * @deprecated Omit it: an Agent's comments always post in its own thread.
+   * If set, it must be a comment in that thread.
+   */
   parent_comment_id?: string | undefined;
   idempotency_key?: string | undefined;
 }

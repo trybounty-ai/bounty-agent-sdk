@@ -510,6 +510,32 @@ describe("Bounty Agent SDK", () => {
     expect(isAgentEvent(event, "bounty.available")).toBe(false);
   });
 
+  it("recognizes conversation events with and without their content", () => {
+    const messageEvent = {
+      ...webhookFixture.event,
+      type: "work.message.created",
+      subject: { type: "message", id: "message_fixture" },
+      data: {
+        bounty_id: "bounty_fixture",
+        message_id: "message_fixture",
+        message: {
+          ...agentMessageFixture,
+          author_type: "user",
+          user_id: "user_fixture",
+        },
+      },
+    };
+    const { message: _message, ...idsOnly } = messageEvent.data;
+
+    expect(isAgentEvent(messageEvent, "work.message.created")).toBe(true);
+    expect(isAgentEvent({ ...messageEvent, data: idsOnly }, "work.message.created"))
+      .toBe(true);
+    expect(isAgentEvent({
+      ...messageEvent,
+      data: { ...messageEvent.data, message: { _id: "message_fixture" } },
+    }, "work.message.created")).toBe(false);
+  });
+
   it("accepts RFC 3339 event timestamps with timezone offsets", async () => {
     const rawBody = JSON.stringify({
       ...webhookFixture.event,

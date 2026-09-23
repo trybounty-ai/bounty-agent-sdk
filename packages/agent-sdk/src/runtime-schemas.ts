@@ -49,110 +49,6 @@ const knownEventBase = {
   subject: knownAgentEventSubjectSchema,
 };
 
-export const knownAgentEventSchemas = {
-  "bounty.available": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("bounty.available"),
-    data: passthroughObject({
-      bounty_id: id,
-      bounty_version: z.number().int(),
-      reason: z.enum(["automatic", "manual_release"]),
-      title: z.string().optional(),
-    }),
-  }),
-  "bounty.updated": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("bounty.updated"),
-    data: passthroughObject({
-      bounty_id: id,
-      bounty_version: z.number().int(),
-    }),
-  }),
-  "discussion.user_replied": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("discussion.user_replied"),
-    data: passthroughObject({
-      bounty_id: id,
-      comment_id: id,
-      parent_comment_id: id.optional(),
-    }),
-  }),
-  "bounty.claimed": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("bounty.claimed"),
-    data: passthroughObject({
-      bounty_id: id,
-      claim_id: id,
-      agent_id: id,
-      bounty_version: z.number().int(),
-    }),
-  }),
-  "work.message.created": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("work.message.created"),
-    data: passthroughObject({ bounty_id: id, message_id: id }),
-  }),
-  "submission.verification_failed": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("submission.verification_failed"),
-    data: passthroughObject({
-      bounty_id: id,
-      claim_id: id,
-      submission_id: id,
-      submission_version: z.number().int(),
-      reason: z.string(),
-    }),
-  }),
-  "submission.review_opened": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("submission.review_opened"),
-    data: passthroughObject({
-      bounty_id: id,
-      claim_id: id,
-      submission_id: id,
-      submission_version: z.number().int(),
-      review_deadline_at: timestamp,
-    }),
-  }),
-  "submission.accepted": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("submission.accepted"),
-    data: passthroughObject({
-      bounty_id: id,
-      claim_id: id,
-      submission_id: id,
-    }),
-  }),
-  "work.completed": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("work.completed"),
-    data: passthroughObject({
-      bounty_id: id,
-      claim_id: id,
-      submission_id: id.optional(),
-    }),
-  }),
-  "work.ended": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("work.ended"),
-    data: passthroughObject({
-      bounty_id: id,
-      claim_id: id.optional(),
-      reason: z.enum([
-        "canceled",
-        "expired",
-        "rejected",
-        "dispute_lost",
-        "claim_released",
-      ]),
-    }),
-  }),
-  "template.assignment.created": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("template.assignment.created"),
-    data: z.record(z.string(), z.json()),
-  }),
-} as const;
 
 export const agentEventPageSchema = passthroughObject({
   events: z.array(agentEventEnvelopeSchema),
@@ -284,6 +180,117 @@ export const agentMessageSchema = z.discriminatedUnion("author_type", [
     created_at: timestamp,
   }),
 ]);
+
+export const knownAgentEventSchemas = {
+  "bounty.available": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("bounty.available"),
+    data: passthroughObject({
+      bounty_id: id,
+      bounty_version: z.number().int(),
+      reason: z.enum(["automatic", "manual_release"]),
+      title: z.string().optional(),
+    }),
+  }),
+  "bounty.updated": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("bounty.updated"),
+    data: passthroughObject({
+      bounty_id: id,
+      bounty_version: z.number().int(),
+    }),
+  }),
+  "discussion.user_replied": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("discussion.user_replied"),
+    data: passthroughObject({
+      bounty_id: id,
+      comment_id: id,
+      parent_comment_id: id.optional(),
+      comment: agentBountyCommentSchema.optional(),
+      parent_comment: agentBountyCommentSchema.optional(),
+    }),
+  }),
+  "bounty.claimed": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("bounty.claimed"),
+    data: passthroughObject({
+      bounty_id: id,
+      claim_id: id,
+      agent_id: id,
+      bounty_version: z.number().int(),
+    }),
+  }),
+  "work.message.created": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("work.message.created"),
+    data: passthroughObject({
+      bounty_id: id,
+      message_id: id,
+      message: agentMessageSchema.optional(),
+    }),
+  }),
+  "submission.verification_failed": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("submission.verification_failed"),
+    data: passthroughObject({
+      bounty_id: id,
+      claim_id: id,
+      submission_id: id,
+      submission_version: z.number().int(),
+      reason: z.string(),
+    }),
+  }),
+  "submission.review_opened": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("submission.review_opened"),
+    data: passthroughObject({
+      bounty_id: id,
+      claim_id: id,
+      submission_id: id,
+      submission_version: z.number().int(),
+      review_deadline_at: timestamp,
+    }),
+  }),
+  "submission.accepted": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("submission.accepted"),
+    data: passthroughObject({
+      bounty_id: id,
+      claim_id: id,
+      submission_id: id,
+    }),
+  }),
+  "work.completed": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("work.completed"),
+    data: passthroughObject({
+      bounty_id: id,
+      claim_id: id,
+      submission_id: id.optional(),
+    }),
+  }),
+  "work.ended": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("work.ended"),
+    data: passthroughObject({
+      bounty_id: id,
+      claim_id: id.optional(),
+      reason: z.enum([
+        "canceled",
+        "expired",
+        "rejected",
+        "dispute_lost",
+        "claim_released",
+      ]),
+    }),
+  }),
+  "template.assignment.created": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("template.assignment.created"),
+    data: z.record(z.string(), z.json()),
+  }),
+} as const;
 
 export const agentMessagePageSchema = passthroughObject({
   messages: z.array(agentMessageSchema),
