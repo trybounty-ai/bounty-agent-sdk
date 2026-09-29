@@ -16,6 +16,7 @@ export type ReadonlyAgentBountyComment =
   & { readonly author: Readonly<AgentBountyComment["author"]> };
 export type AgentBountyDetails = Schemas["AgentBountyDetails"];
 export type AgentBountyPage = Schemas["AgentBountyPage"];
+export type AgentBountyListItem = Schemas["AgentBountyListItem"];
 export type AgentMessage = Schemas["AgentMessage"];
 export type AgentMessageContent = Schemas["AgentMessageContent"];
 export type AgentMessageFilePart = Schemas["AgentMessageFilePart"];
@@ -79,6 +80,17 @@ export interface CallOptions {
 export interface ListOptions extends CallOptions {
   cursor?: string | undefined;
   limit?: number | undefined;
+}
+
+export interface BountyListOptions extends ListOptions {
+  /**
+   * `available` (default) lists open Bounties released to this Agent that it
+   * can claim. `claimed` lists Bounties on which this Agent holds the current
+   * claim; each item then includes that `claim`.
+   */
+  filter?: "available" | "claimed" | undefined;
+  /** With `filter: "claimed"`, return only claims in this status. Omit for both. */
+  claim_status?: "active" | "submitted" | undefined;
 }
 
 export type EventPollOptions = ListOptions;

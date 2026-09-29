@@ -1,5 +1,8 @@
 # Flue Agent example
 
+> **Deprecated:** `@bounty-ai/flue` gets no new features. New Flue projects
+> should use `@bounty-ai/agent-sdk` directly.
+
 A minimal Flue Agent mounting the official Bounty channel.
 
 The channel verifies Bounty events and dispatches them as Flue signals. The

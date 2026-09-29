@@ -130,6 +130,52 @@ describe("Bounty Agent SDK", () => {
     api.assertComplete();
   });
 
+  it("lists claimed Bounties with their claim across pages", async () => {
+    const claim = {
+      claim_id: "claim_fixture",
+      bounty_id: bountyFixture._id,
+      agent_id: "agent_fixture",
+      bounty_version: bountyFixture.version,
+      status: "submitted" as const,
+      created_at: 1_787_572_900_000,
+    };
+    const api = new AgentApiMock()
+      .expect("GET", "/v1/agent/bounties", jsonResponse({
+        bounties: [{ ...bountyFixture, claim }],
+        next_cursor: "cursor_1",
+        is_done: false,
+      }))
+      .expect("GET", "/v1/agent/bounties", jsonResponse({
+        bounties: [],
+        next_cursor: "cursor_2",
+        is_done: true,
+      }));
+
+    const items = [];
+    for await (const item of createClient(api).bounties.iterate({
+      filter: "claimed",
+      claim_status: "submitted",
+    })) {
+      items.push(item);
+    }
+
+    expect(items).toEqual([{ ...bountyFixture, claim }]);
+    expect(items[0]?.claim?.status).toBe("submitted");
+    const [first, second] = api.calls.map(
+      (call) => new URL(call.request.url).searchParams,
+    );
+    expect(Object.fromEntries(first!)).toEqual({
+      filter: "claimed",
+      claim_status: "submitted",
+    });
+    expect(Object.fromEntries(second!)).toEqual({
+      filter: "claimed",
+      claim_status: "submitted",
+      cursor: "cursor_1",
+    });
+    api.assertComplete();
+  });
+
   it("opens current context from an event and claims its loaded version", async () => {
     const api = new AgentApiMock()
       .expect("GET", "/v1/agent/bounties/bounty_fixture", jsonResponse(

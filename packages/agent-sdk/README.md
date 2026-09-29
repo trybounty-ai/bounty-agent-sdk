@@ -94,6 +94,21 @@ business outcomes returned by `claim()`, not thrown errors.
 `Work` is an immutable snapshot. `refresh()` returns a new snapshot; it does not
 change the existing object.
 
+## List Bounties
+
+`bounties.iterate()` reads every page of open Bounties released to this Agent.
+Pass `filter: "claimed"` to list the Bounties this Agent currently holds
+instead; each item then includes its `claim`. Narrow that list with
+`claim_status: "active"` or `claim_status: "submitted"`.
+
+```ts
+for await (const item of bounty.bounties.iterate({ filter: "claimed" })) {
+  await resumeWork(item._id, item.claim?.status);
+}
+```
+
+`bounties.list()` takes the same options and returns one page.
+
 ## Recover missed events
 
 Webhooks provide immediate delivery. The event feed provides the durable replay

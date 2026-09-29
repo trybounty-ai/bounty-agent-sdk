@@ -1,7 +1,7 @@
 {
   "name": "@bounty-ai/flue",
   "version": "0.1.0-beta.0",
-  "description": "Official Bounty channel for Flue agents",
+  "description": "Deprecated: use @bounty-ai/agent-sdk. Official Bounty channel for Flue agents",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/trybounty-ai/bounty-agent-sdk.git",
