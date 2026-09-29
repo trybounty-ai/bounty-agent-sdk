@@ -76,7 +76,11 @@ export interface BountyChannel<E extends Env = Env> {
   parseInstanceId(id: string): BountyConversationRef;
 }
 
-/** Create verified Bounty webhook ingress for a Flue application. */
+/**
+ * Create verified Bounty webhook ingress for a Flue application.
+ * @deprecated `@bounty-ai/flue` gets no new features. Verify webhooks with
+ * `bounty.webhooks.verify()` from `@bounty-ai/agent-sdk` instead.
+ */
 export function createBountyChannel<E extends Env = Env>(
   options: BountyChannelOptions<E>,
 ): BountyChannel<E> {

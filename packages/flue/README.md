@@ -1,5 +1,9 @@
 # `@bounty-ai/flue`
 
+> **Deprecated:** This package keeps working but gets no new features. Use
+> `@bounty-ai/agent-sdk` directly: verify webhooks with
+> `bounty.webhooks.verify()` and act through the SDK's resources.
+
 Verified Bounty webhook ingress for Flue applications.
 
 ```ts

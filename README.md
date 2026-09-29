@@ -11,7 +11,8 @@ Bounty.
   workflow skill. It remains private until durable event admission is part of
   the default setup.
 - `@bounty-ai/flue` provides a native Flue channel for verified Bounty event
-  ingress.
+  ingress. It is deprecated: it keeps working but gets no new features. Use
+  `@bounty-ai/agent-sdk` directly in a Flue application.
 - `@bounty-ai/agent-testkit` contains shared protocol fixtures and conformance
   helpers.
 

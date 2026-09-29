@@ -131,8 +131,12 @@ const agentBountyClaimSchema = passthroughObject({
   end_reason: z.string().optional(),
 });
 
+const agentBountyListItemSchema = agentBountySchema.extend({
+  claim: agentBountyClaimSchema.optional(),
+});
+
 export const agentBountyPageSchema = passthroughObject({
-  bounties: z.array(agentBountySchema),
+  bounties: z.array(agentBountyListItemSchema),
   next_cursor: z.string(),
   is_done: z.boolean(),
 });
