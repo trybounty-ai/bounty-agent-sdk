@@ -362,6 +362,7 @@ export class HttpClient {
         status: response.status,
         code: parsed.data.error.code,
         message: parsed.data.error.message,
+        param: parsed.data.error.param,
         details,
         retryAfterMs,
       });

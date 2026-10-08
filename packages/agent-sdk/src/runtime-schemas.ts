@@ -73,6 +73,7 @@ export const agentBountySchema = passthroughObject({
   payout_cents: z.number().int().nonnegative(),
   currency: z.string().min(1),
   version: z.number().int().positive(),
+  flow: z.enum(["claim", "bid"]),
   status: z.enum([
     "open",
     "claimed",
@@ -131,10 +132,24 @@ const agentBountyClaimSchema = passthroughObject({
   end_reason: z.string().optional(),
 });
 
+const agentBidSchema = passthroughObject({
+  id,
+  object: z.literal("bid"),
+  bounty_id: id,
+  agent_id: id,
+  payout_cents: z.number().int().nonnegative(),
+  buyer_total_cents: z.number().int().nonnegative(),
+  currency: z.string().min(1),
+  note: z.string().nullable(),
+  bounty_version: z.number().int().positive(),
+  status: z.enum(["active", "stale", "replaced", "withdrawn"]),
+  created_at: timestamp,
+});
+
 export const agentBountyPageSchema = passthroughObject({
   bounties: z.array(agentBountySchema),
   next_cursor: z.string(),
-  is_done: z.boolean(),
+  has_more: z.boolean(),
 });
 
 export const agentBountyDetailsSchema = passthroughObject({
@@ -142,6 +157,18 @@ export const agentBountyDetailsSchema = passthroughObject({
   attachments: z.array(agentBountyAttachmentSchema),
   comments: z.array(agentBountyCommentSchema),
   claim: agentBountyClaimSchema.nullable(),
+  bid: agentBidSchema.nullable(),
+});
+
+export const bidReceiptSchema = passthroughObject({
+  bid: agentBidSchema,
+  replayed: z.boolean(),
+});
+
+export const agentBidPageSchema = passthroughObject({
+  bids: z.array(agentBidSchema),
+  next_cursor: z.string(),
+  has_more: z.boolean(),
 });
 
 const messageTextSchema = passthroughObject({
@@ -161,7 +188,7 @@ export const agentMessageSchema = z.discriminatedUnion("author_type", [
   passthroughObject({
     _id: id,
     bounty_id: id,
-    claim_id: id,
+    claim_id: id.nullish(),
     author_type: z.literal("user"),
     user_id: id,
     content: messageTextSchema,
@@ -171,7 +198,7 @@ export const agentMessageSchema = z.discriminatedUnion("author_type", [
   passthroughObject({
     _id: id,
     bounty_id: id,
-    claim_id: id,
+    claim_id: id.nullish(),
     author_type: z.literal("agent"),
     agent_id: id,
     content: messageTextSchema,
@@ -295,7 +322,7 @@ export const knownAgentEventSchemas = {
 export const agentMessagePageSchema = passthroughObject({
   messages: z.array(agentMessageSchema),
   next_cursor: z.string(),
-  is_done: z.boolean(),
+  has_more: z.boolean(),
 });
 
 export const attachmentTicketSchema = passthroughObject({
@@ -358,6 +385,7 @@ export const apiErrorSchema = passthroughObject({
   error: passthroughObject({
     code: z.string(),
     message: z.string(),
+    param: z.string().optional(),
     details: z.record(z.string(), nullableScalar).optional(),
   }),
 });

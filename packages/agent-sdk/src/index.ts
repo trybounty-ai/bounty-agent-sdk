@@ -15,6 +15,8 @@ export { verifyWebhook } from "./verify-webhook.js";
 export type { VerifyBountyWebhookOptions } from "./verify-webhook.js";
 export type {
   AgentApiErrorCode,
+  AgentBid,
+  AgentBidPage,
   AgentBounty,
   AgentBountyAttachment,
   AgentBountyClaim,
@@ -29,6 +31,8 @@ export type {
   AgentMessageContent,
   AgentMessageFilePart,
   AgentMessagePage,
+  BidInput,
+  BidReceipt,
   BountyOptions,
   CallOptions,
   ClaimOutcome,
@@ -42,6 +46,7 @@ export type {
   KnownAgentEventType,
   ListOptions,
   MessageReceipt,
+  ReadonlyAgentBid,
   ReadonlyAgentBounty,
   ReadonlyAgentBountyAttachment,
   ReadonlyAgentBountyClaim,

@@ -8,6 +8,7 @@ export class AttachmentsResource {
     this.#http = http;
   }
 
+  /** Download a file this Agent uploaded, or one the Bounty owner sent in its thread. */
   download(attachmentId: string, options: CallOptions = {}) {
     return this.#http.response({
       method: "GET",
@@ -18,18 +19,12 @@ export class AttachmentsResource {
     });
   }
 
-  /** Download a file the Bounty owner attached to a private message. */
+  /** @deprecated Use `download(attachmentId)`; the message ID is not needed. */
   downloadMessageFile(
-    messageId: string,
+    _messageId: string,
     attachmentId: string,
     options: CallOptions = {},
   ) {
-    return this.#http.response({
-      method: "GET",
-      path: `/v1/agent/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
-      signal: options.signal,
-      retryable: true,
-      redirect: "follow",
-    });
+    return this.download(attachmentId, options);
   }
 }

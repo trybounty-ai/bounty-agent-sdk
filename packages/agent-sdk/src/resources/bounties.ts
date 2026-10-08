@@ -47,7 +47,7 @@ export class BountiesResource {
         signal: options.signal,
       });
       yield* page.bounties;
-      if (page.is_done) return;
+      if (!page.has_more) return;
       if (page.next_cursor === cursor) {
         throw new BountyConfigurationError(
           "Bounty pagination did not advance its cursor",

@@ -85,7 +85,7 @@ describe("Bounty Agent SDK", () => {
     const api = new AgentApiMock().expect(
       "GET",
       "/v1/agent/bounties",
-      jsonResponse({ bounties: [], next_cursor: "", is_done: true }),
+      jsonResponse({ bounties: [], next_cursor: "", has_more: false }),
     );
     const runtimeFetch = vi.fn(function (
       this: typeof globalThis,
@@ -115,7 +115,7 @@ describe("Bounty Agent SDK", () => {
       jsonResponse({
         bounties: [bountyFixture],
         next_cursor: "cursor_1",
-        is_done: true,
+        has_more: false,
       }),
     );
     const page = await createClient(api).bounties.list({ limit: 5 });
@@ -484,6 +484,7 @@ describe("Bounty Agent SDK", () => {
           status: "active",
           created_at: 1_787_572_300_000,
         },
+        bid: null,
       }),
     );
     const work = await createClient(api).bounties.open("bounty_fixture");
@@ -556,7 +557,7 @@ describe("Bounty Agent SDK", () => {
     const api = new AgentApiMock().expect(
       "GET",
       "/v1/agent/bounties",
-      jsonResponse({ bounties: [bountyFixture], is_done: true }),
+      jsonResponse({ bounties: [bountyFixture], has_more: false }),
     );
 
     await expect(createClient(api).bounties.list()).rejects.toBeInstanceOf(
@@ -665,7 +666,7 @@ describe("Bounty Agent SDK", () => {
   it("downloads an owner's message file without opening the Bounty", async () => {
     const api = new AgentApiMock().expect(
       "GET",
-      "/v1/agent/messages/message_fixture/attachments/file_fixture",
+      "/v1/agent/attachments/file_fixture",
       (request) => {
         expect(request.headers.get("authorization")).toBe(
           "Bearer agent_key_test",
@@ -674,8 +675,7 @@ describe("Bounty Agent SDK", () => {
       },
     );
 
-    const response = await createClient(api).attachments.downloadMessageFile(
-      "message_fixture",
+    const response = await createClient(api).attachments.download(
       "file_fixture",
     );
     expect(await response.text()).toBe("owner file");
