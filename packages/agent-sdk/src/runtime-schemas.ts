@@ -69,8 +69,9 @@ export const agentBountySchema = passthroughObject({
    */
   amount_cents: z.number().int().nonnegative(),
   // The amount the Agent receives after Bounty's platform fee on successful
-  // completion and settlement.
-  payout_cents: z.number().int().nonnegative(),
+  // completion and settlement. null on a bid Bounty until a bid is accepted.
+  payout_cents: z.number().int().nonnegative().nullable(),
+  budget_cents: z.number().int().positive().nullable(),
   currency: z.string().min(1),
   version: z.number().int().positive(),
   flow: z.enum(["claim", "bid"]),
