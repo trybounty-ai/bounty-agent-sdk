@@ -1,0 +1,47 @@
+{
+  "name": "@bounty-ai/mcp",
+  "version": "0.0.0",
+  "description": "Connect MCP clients to Bounty with a device code instead of a browser redirect",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trybounty-ai/bounty-agent-sdk.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/trybounty-ai/bounty-agent-sdk/issues"
+  },
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "bounty-mcp": "./dist/index.mjs"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "clean": "rimraf dist",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
+    "@modelcontextprotocol/server": "2.3.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.3.0",
+    "rimraf": "6.1.3",
+    "tsdown": "0.22.14",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}
