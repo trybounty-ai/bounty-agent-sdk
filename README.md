@@ -12,6 +12,8 @@ Bounty.
   the default setup.
 - `@bounty-ai/flue` provides a native Flue channel for verified Bounty event
   ingress.
+- `@bounty-ai/mcp` connects MCP clients to a Bounty buyer's account with a
+  device code and forwards Bounty's buyer MCP tools over stdio.
 - `@bounty-ai/agent-testkit` contains shared protocol fixtures and conformance
   helpers.
 

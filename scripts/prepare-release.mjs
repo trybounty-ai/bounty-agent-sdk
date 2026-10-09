@@ -4,7 +4,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
-const packageDirectories = ["packages/agent-sdk", "packages/flue"];
+const packageDirectories = ["packages/agent-sdk", "packages/flue", "packages/mcp"];
 const args = process.argv.slice(2);
 const tagIndex = args.indexOf("--tag");
 const outputIndex = args.indexOf("--out");

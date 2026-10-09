@@ -6,6 +6,7 @@ on:
     paths:
       - packages/agent-sdk/package.json
       - packages/flue/package.json
+      - packages/mcp/package.json
   workflow_dispatch:
     inputs:
       dry_run:

@@ -1,7 +1,7 @@
 # Releasing packages
 
-Every change to `@bounty-ai/agent-sdk` or `@bounty-ai/flue` that should reach
-npm needs a Changeset:
+Every change to `@bounty-ai/agent-sdk`, `@bounty-ai/flue`, or `@bounty-ai/mcp`
+that should reach npm needs a Changeset:
 
 ```bash
 pnpm changeset
@@ -54,11 +54,12 @@ Configure its npm trusted publisher with:
 - Environment: `npm`
 - Allowed action: `npm publish`
 
-An npm package must exist before trusted publishing can be configured.
-`@bounty-ai/flue` therefore needs a one-time local bootstrap release from an
-audited tarball using interactive npm authentication and 2FA. Do not store an
-npm token in GitHub. After that first release, configure the same trusted
-publisher for Flue and log out of the temporary npm session.
+An npm package must exist before trusted publishing can be configured. A new
+package such as `@bounty-ai/mcp` therefore needs a one-time local bootstrap
+release from an audited tarball using interactive npm authentication and 2FA.
+Do not store an npm token in GitHub. After that first release, configure the
+same trusted publisher for the package and log out of the temporary npm
+session.
 
 The workflow publishes through the npm CLI, which supports OIDC and automatic
 provenance. pnpm is still used to create each tarball so workspace dependency
