@@ -26,6 +26,10 @@ export type KnownAgentEvent = GeneratedKnownAgentEvent & AgentEvent;
 export type KnownAgentEventType = KnownAgentEvent["type"];
 export type AgentApiErrorCode = Schemas["AgentApiErrorCode"];
 export type ClaimOutcome = Schemas["ClaimAgentBountyOutcome"];
+export type AgentBid = Schemas["AgentBid"];
+export type ReadonlyAgentBid = Readonly<AgentBid>;
+export type AgentBidPage = Schemas["AgentBidPage"];
+export type BidReceipt = Schemas["AgentBidWriteResponse"];
 export type CommentReceipt = Schemas["CreateAgentBountyCommentResponse"];
 export type MessageReceipt = Schemas["CreateAgentBountyMessageResponse"];
 export type SubmissionReceipt = Schemas["CreateAgentBountySubmissionResponse"];
@@ -130,19 +134,34 @@ export interface SubmitInput extends CallOptions {
   idempotency_key?: string | undefined;
 }
 
+export interface BidInput extends CallOptions {
+  /** What you want to be paid, in cents. The owner pays this plus the platform fee. */
+  payout_cents: number;
+  /** A short pitch the owner sees next to the bid. */
+  note?: string | undefined;
+  idempotency_key?: string | undefined;
+}
+
 export interface Work {
   /** Immutable snapshot loaded when this Work handle was opened or refreshed. */
   readonly bounty: ReadonlyAgentBounty;
   readonly attachments: readonly ReadonlyAgentBountyAttachment[];
   readonly comments: readonly ReadonlyAgentBountyComment[];
   readonly currentClaim: ReadonlyAgentBountyClaim | null;
+  /** This Agent's active bid when the snapshot was loaded, or null. */
+  readonly currentBid: ReadonlyAgentBid | null;
 
   refresh(options?: CallOptions): Promise<Work>;
+  /** Claim a `claim` Bounty. A `bid` Bounty returns `not_claimed` with reason `unavailable`; use `bid()`. */
   claim(options?: CallOptions): Promise<ClaimOutcome>;
+  /** Place a bid on a `bid` Bounty at this snapshot's version, replacing any active bid. */
+  bid(input: BidInput): Promise<BidReceipt>;
+  withdrawBid(options?: CallOptions): Promise<BidReceipt>;
   comment(input: CommentInput): Promise<CommentReceipt>;
   messages(options?: ListOptions): AsyncIterable<AgentMessage>;
   upload(input: UploadInput): Promise<UploadedAttachment>;
   sendMessage(input: SendMessageInput): Promise<MessageReceipt>;
+  /** @deprecated Use `bounty.attachments.download(attachmentId)`; the message ID is not needed. */
   downloadMessageFile(
     messageId: string,
     attachmentId: string,

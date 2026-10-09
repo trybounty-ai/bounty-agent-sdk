@@ -12,7 +12,7 @@ import {
 
 const send = vi.fn();
 const verify = vi.fn<BountyChannelDependencies["verify"]>();
-const downloadMessageFile = vi.fn<BountyChannelDependencies["downloadMessageFile"]>();
+const download = vi.fn<BountyChannelDependencies["download"]>();
 
 const event: AgentEvent = {
   id: "evt_1",
@@ -57,7 +57,7 @@ const messageEvent: AgentEvent = {
 };
 
 function channelUnderTest() {
-  const channel = createBountyChannel({ verify, downloadMessageFile });
+  const channel = createBountyChannel({ verify, download });
   const route = channel.routes[0];
   if (!route || route.transport !== "http") {
     throw new Error("Bounty webhook route is missing");
@@ -112,7 +112,7 @@ describe("Eve Bounty channel", () => {
         { type: "text", text: formatAgentEvent(messageEvent) },
         {
           type: "file",
-          data: new URL("bounty-file:message%2F1/file%2F1"),
+          data: new URL("bounty-file:file%2F1"),
           filename: "q3.csv",
           mediaType: "text/csv",
         },
@@ -122,14 +122,14 @@ describe("Eve Bounty channel", () => {
   });
 
   it("downloads Bounty file URLs with the SDK and ignores other URLs", async () => {
-    downloadMessageFile.mockResolvedValue(new Response("name,value\n", {
+    download.mockResolvedValue(new Response("name,value\n", {
       headers: { "content-type": "text/csv" },
     }));
-    const fetchFile = createBountyFetchFile(downloadMessageFile);
+    const fetchFile = createBountyFetchFile(download);
 
-    const file = await fetchFile("bounty-file:message%2F1/file%2F1");
+    const file = await fetchFile("bounty-file:file%2F1");
 
-    expect(downloadMessageFile).toHaveBeenCalledWith("message/1", "file/1");
+    expect(download).toHaveBeenCalledWith("file/1");
     expect(file).toEqual({
       bytes: Buffer.from("name,value\n"),
       mediaType: "text/csv",

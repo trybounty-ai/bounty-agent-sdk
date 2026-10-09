@@ -20,5 +20,6 @@ export async function bountyDetails(bountyId: string, signal?: AbortSignal) {
     attachments: work.attachments,
     comments: work.comments,
     currentClaim: work.currentClaim,
+    currentBid: work.currentBid,
   };
 }

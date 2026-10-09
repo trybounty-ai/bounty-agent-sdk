@@ -24,46 +24,37 @@ const MAX_HANDLED_EVENTS = 10_000;
 
 export interface BountyChannelDependencies {
   verify(request: Request): Promise<AgentEvent>;
-  downloadMessageFile(
-    messageId: string,
-    attachmentId: string,
-    options?: CallOptions,
-  ): Promise<Response>;
+  download(attachmentId: string, options?: CallOptions): Promise<Response>;
 }
 
 const defaultDependencies: BountyChannelDependencies = {
   verify: (request) => bountyClient().webhooks.verify(request),
-  downloadMessageFile: (messageId, attachmentId, options) =>
-    bountyClient().attachments.downloadMessageFile(messageId, attachmentId, options),
+  download: (attachmentId, options) =>
+    bountyClient().attachments.download(attachmentId, options),
 };
 
 // Owner files travel as `bounty-file:` URLs so Eve stages them into the
 // session sandbox through `fetchFile`, which holds the Bounty API key.
-function bountyFileUrl(messageId: string, attachmentId: string) {
+function bountyFileUrl(attachmentId: string) {
   return new URL(
-    `${BOUNTY_FILE_URL_PROTOCOL}${encodeURIComponent(messageId)}/${encodeURIComponent(attachmentId)}`,
+    `${BOUNTY_FILE_URL_PROTOCOL}${encodeURIComponent(attachmentId)}`,
   );
 }
 
 function parseBountyFileUrl(value: string) {
   if (!value.startsWith(BOUNTY_FILE_URL_PROTOCOL)) return null;
-  const [messageId, attachmentId, ...rest] = value
-    .slice(BOUNTY_FILE_URL_PROTOCOL.length)
-    .split("/");
-  if (!messageId || !attachmentId || rest.length > 0) return null;
-  return {
-    messageId: decodeURIComponent(messageId),
-    attachmentId: decodeURIComponent(attachmentId),
-  };
+  const attachmentId = value.slice(BOUNTY_FILE_URL_PROTOCOL.length);
+  if (!attachmentId || attachmentId.includes("/")) return null;
+  return decodeURIComponent(attachmentId);
 }
 
 export function createBountyFetchFile(
-  downloadMessageFile: BountyChannelDependencies["downloadMessageFile"],
+  download: BountyChannelDependencies["download"],
 ) {
   return async (url: string) => {
-    const file = parseBountyFileUrl(url);
-    if (!file) return null;
-    const response = await downloadMessageFile(file.messageId, file.attachmentId);
+    const attachmentId = parseBountyFileUrl(url);
+    if (!attachmentId) return null;
+    const response = await download(attachmentId);
     if (!response.ok) {
       throw new Error(`Bounty file download returned HTTP ${response.status}`);
     }
@@ -78,12 +69,11 @@ function turnMessage(event: AgentEvent) {
   if (!isAgentEvent(event, "work.message.created") || !event.data.message) {
     return text;
   }
-  const messageId = event.data.message_id;
   const files = event.data.message.parts.flatMap((part) =>
     part.type === "file"
       ? [{
           type: "file" as const,
-          data: bountyFileUrl(messageId, part.attachment_id),
+          data: bountyFileUrl(part.attachment_id),
           filename: part.filename,
           mediaType: part.content_type,
         }]
@@ -110,7 +100,7 @@ export function createBountyChannel(
       bountyId: "",
     },
     metadata: ({ agentId, bountyId }) => ({ agentId, bountyId }),
-    fetchFile: createBountyFetchFile(dependencies.downloadMessageFile),
+    fetchFile: createBountyFetchFile(dependencies.download),
     routes: [
       POST("/webhooks/bounty", async (request, { from }) => {
         try {

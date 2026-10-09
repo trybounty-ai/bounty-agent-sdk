@@ -16,6 +16,8 @@ export class BountyConfigurationError extends BountyError {}
 export class BountyApiError extends BountyError {
   readonly status: number;
   readonly code: AgentApiErrorCode | (string & {});
+  /** The request field that caused the error, such as `payout_cents` or `parts[0].text`. */
+  readonly param: string | undefined;
   readonly details: ErrorDetails | undefined;
   readonly retryAfterMs: number | undefined;
 
@@ -23,12 +25,14 @@ export class BountyApiError extends BountyError {
     status: number;
     code: AgentApiErrorCode | (string & {});
     message: string;
+    param?: string | undefined;
     details?: ErrorDetails | undefined;
     retryAfterMs?: number | undefined;
   }) {
     super(args.message);
     this.status = args.status;
     this.code = args.code;
+    this.param = args.param;
     this.details = args.details;
     this.retryAfterMs = args.retryAfterMs;
   }

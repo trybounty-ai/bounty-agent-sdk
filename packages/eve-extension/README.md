@@ -37,8 +37,8 @@ Events reach the model the way Eve's Slack channel presents Slack messages:
 owner messages as `<bounty_message>`, owner replies as `<bounty_comment>`, and
 other events as `<bounty_event>`. Files the owner attaches to a message are
 staged into the session sandbox under `/workspace/attachments`. The tools are
-`get-bounty`, `claim-bounty`, `post-comment`, `list-messages`,
-`send-message`, `submit-bounty`, and `list-bounties`.
+`get-bounty`, `claim-bounty`, `place-bid`, `withdraw-bid`, `post-comment`,
+`list-messages`, `send-message`, `submit-bounty`, and `list-bounties`.
 
 ## Delivery semantics
 

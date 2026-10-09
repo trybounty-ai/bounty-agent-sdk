@@ -13,8 +13,10 @@ export const bountyFixture = {
   tags: ["market"],
   amount_cents: 30_000,
   payout_cents: 26_087,
+  budget_cents: null,
   currency: "usd",
   version: 3,
+  flow: "claim",
   status: "open",
   created_at: 1_787_572_000_000,
   updated_at: 1_787_572_800_000,
@@ -25,6 +27,7 @@ export const bountyDetailsFixture = {
   attachments: [],
   comments: [],
   claim: null,
+  bid: null,
 } satisfies AgentBountyDetails;
 
 export const agentMessageFixture = {

@@ -68,6 +68,15 @@ export const bountyMessageInput = z.object({
   text: z.string().min(1).max(4_000),
 });
 
+export const bountyBidInput = z.object({
+  payout_cents: z.number().int().min(500).max(10_000_000).describe(
+    "What you want to be paid, in cents. The owner pays this plus the platform fee.",
+  ),
+  note: z.string().max(2_000).optional().describe(
+    "A short pitch the owner sees next to the bid.",
+  ),
+});
+
 type DeliverableMetadata = Pick<Deliverable, "key" | "label" | "mime_type">;
 type ImageDeliverableData = Extract<
   Deliverable,
@@ -106,7 +115,7 @@ export function createBountyTools(
 
         return {
           "get-bounty": defineTool({
-            description: "Get this Bounty's current terms, public discussion, attachments, and Claim.",
+            description: "Get this Bounty's current terms, public discussion, attachments, Claim, and your active bid. `bounty.flow` says whether you claim it or bid on it.",
             inputSchema: z.object({}),
             execute: (_input, tool) => dependencies.details(
               bountyId,
@@ -114,13 +123,38 @@ export function createBountyTools(
             ),
           }),
           "claim-bounty": defineTool({
-            description: "Claim this Bounty at its current version. Returns claimed, or not_claimed with a reason.",
+            description: "Claim this Bounty at its current version. Returns claimed, or not_claimed with a reason. A bid Bounty can't be claimed; use place-bid.",
             inputSchema: z.object({}),
             async execute(_input, tool) {
               const work = await dependencies.open(bountyId, {
                 signal: tool.abortSignal,
               });
               return work.claim({ signal: tool.abortSignal });
+            },
+          }),
+          "place-bid": defineTool({
+            description: "Bid on this bid Bounty at its current version. Bidding again replaces your active bid, and the owner only sees the latest. If the Bounty changes after you bid, your bid becomes stale; read it again and bid again.",
+            inputSchema: bountyBidInput,
+            async execute({ payout_cents, note }, tool) {
+              const work = await dependencies.open(bountyId, {
+                signal: tool.abortSignal,
+              });
+              return work.bid({
+                payout_cents,
+                note,
+                idempotency_key: `eve:${tool.callId}:bid`,
+                signal: tool.abortSignal,
+              });
+            },
+          }),
+          "withdraw-bid": defineTool({
+            description: "Withdraw your active bid on this Bounty. Your private thread with the owner stays open, and you can bid again later.",
+            inputSchema: z.object({}),
+            async execute(_input, tool) {
+              const work = await dependencies.open(bountyId, {
+                signal: tool.abortSignal,
+              });
+              return work.withdrawBid({ signal: tool.abortSignal });
             },
           }),
           "post-comment": defineTool({
@@ -138,7 +172,7 @@ export function createBountyTools(
             },
           }),
           "list-messages": defineTool({
-            description: "Read the private Work Conversation with this Bounty's owner, newest first. Available after you claim the Bounty.",
+            description: "Read your private thread with this Bounty's owner, newest first. On a claim Bounty it opens when you claim; on a bid Bounty it is open before you are hired. You can still read it after you can no longer send messages.",
             inputSchema: z.object({
               cursor: z.string().optional(),
               limit: z.number().int().positive().max(100).optional(),
@@ -159,7 +193,7 @@ export function createBountyTools(
             },
           }),
           "send-message": defineTool({
-            description: "Send a private message to this Bounty's owner in the Work Conversation. Available after you claim the Bounty.",
+            description: "Send a private message to this Bounty's owner. On a claim Bounty you must hold the Claim. On an open bid Bounty you can message the owner before or after bidding, up to 6 messages a minute until you are hired.",
             inputSchema: bountyMessageInput,
             async execute({ text }, tool) {
               const work = await dependencies.open(bountyId, {

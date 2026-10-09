@@ -1,6 +1,7 @@
 import { BountyConfigurationError } from "./errors.js";
 import { HttpClient } from "./http.js";
 import { AttachmentsResource } from "./resources/attachments.js";
+import { BidsResource } from "./resources/bids.js";
 import { BountiesResource } from "./resources/bounties.js";
 import { EventsResource } from "./resources/events.js";
 import { WebhooksResource } from "./resources/webhooks.js";
@@ -10,6 +11,7 @@ const defaultBaseURL = "https://api.trybounty.ai";
 
 export class Bounty {
   readonly attachments: AttachmentsResource;
+  readonly bids: BidsResource;
   readonly bounties: BountiesResource;
   readonly events: EventsResource;
   readonly webhooks: WebhooksResource;
@@ -70,6 +72,7 @@ export class Bounty {
       fetch: fetchImplementation,
     });
     this.attachments = new AttachmentsResource(http);
+    this.bids = new BidsResource(http);
     this.bounties = new BountiesResource(http);
     this.events = new EventsResource(http);
     this.webhooks = new WebhooksResource(options.webhookSecret);

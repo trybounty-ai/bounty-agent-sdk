@@ -8,6 +8,7 @@ import {
   agentBountyDetailsSchema,
   agentMessagePageSchema,
   attachmentTicketSchema,
+  bidReceiptSchema,
   claimOutcomeSchema,
   commentReceiptSchema,
   completeAttachmentReceiptSchema,
@@ -18,6 +19,8 @@ import type {
   AgentBountyDetails,
   AgentMessage,
   AgentMessagePage,
+  BidInput,
+  BidReceipt,
   CallOptions,
   ClaimOutcome,
   CommentInput,
@@ -25,6 +28,7 @@ import type {
   CompleteAttachmentReceipt,
   ListOptions,
   MessageReceipt,
+  ReadonlyAgentBid,
   ReadonlyAgentBounty,
   ReadonlyAgentBountyAttachment,
   ReadonlyAgentBountyClaim,
@@ -53,6 +57,13 @@ interface CommentRequestBody {
   idempotency_key: string;
 }
 
+interface BidRequestBody {
+  payout_cents: number;
+  note?: string;
+  expected_version: number;
+  idempotency_key: string;
+}
+
 export class WorkImplementation implements Work {
   readonly #http: HttpClient;
   readonly #bountyId: string;
@@ -61,6 +72,7 @@ export class WorkImplementation implements Work {
   readonly attachments: readonly ReadonlyAgentBountyAttachment[];
   readonly comments: readonly ReadonlyAgentBountyComment[];
   readonly currentClaim: ReadonlyAgentBountyClaim | null;
+  readonly currentBid: ReadonlyAgentBid | null;
 
   constructor(http: HttpClient, details: AgentBountyDetails) {
     this.#http = http;
@@ -82,6 +94,7 @@ export class WorkImplementation implements Work {
     this.currentClaim = details.claim
       ? Object.freeze({ ...details.claim })
       : null;
+    this.currentBid = details.bid ? Object.freeze({ ...details.bid }) : null;
   }
 
   async refresh(options: CallOptions = {}) {
@@ -103,6 +116,33 @@ export class WorkImplementation implements Work {
       signal: options.signal,
       retryable: true,
       schema: claimOutcomeSchema,
+    });
+  }
+
+  bid(input: BidInput) {
+    const body: BidRequestBody = {
+      payout_cents: input.payout_cents,
+      expected_version: this.#bountyVersion,
+      idempotency_key: input.idempotency_key ?? crypto.randomUUID(),
+    };
+    if (input.note !== undefined) body.note = input.note;
+    return this.#http.json<BidReceipt>({
+      method: "POST",
+      path: `${this.#bountyPath()}/bid`,
+      body,
+      signal: input.signal,
+      retryable: true,
+      schema: bidReceiptSchema,
+    });
+  }
+
+  withdrawBid(options: CallOptions = {}) {
+    return this.#http.json<BidReceipt>({
+      method: "POST",
+      path: `${this.#bountyPath()}/bid/withdraw`,
+      signal: options.signal,
+      retryable: true,
+      schema: bidReceiptSchema,
     });
   }
 
@@ -136,7 +176,7 @@ export class WorkImplementation implements Work {
         schema: agentMessagePageSchema,
       });
       yield* page.messages;
-      if (page.is_done) return;
+      if (!page.has_more) return;
       if (page.next_cursor === cursor) {
         throw new BountyConfigurationError(
           "Message pagination did not advance its cursor",
@@ -253,15 +293,11 @@ export class WorkImplementation implements Work {
   }
 
   downloadMessageFile(
-    messageId: string,
+    _messageId: string,
     attachmentId: string,
     options: CallOptions = {},
   ) {
-    return new AttachmentsResource(this.#http).downloadMessageFile(
-      messageId,
-      attachmentId,
-      options,
-    );
+    return new AttachmentsResource(this.#http).download(attachmentId, options);
   }
 
   submit(input: SubmitInput) {
