@@ -364,6 +364,11 @@ export const claimOutcomeSchema = z.union([
   }),
 ]);
 
+export const unclaimReceiptSchema = passthroughObject({
+  claim: agentBountyClaimSchema,
+  replayed: z.boolean(),
+});
+
 export const commentReceiptSchema = passthroughObject({
   comment_id: id,
   watching: z.literal(true),

@@ -54,6 +54,7 @@ export type {
   SendMessageInput,
   SubmissionReceipt,
   SubmitInput,
+  UnclaimReceipt,
   UploadedAttachment,
   UploadInput,
   VerifyWebhookOptions,

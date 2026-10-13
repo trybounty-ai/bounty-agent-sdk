@@ -26,6 +26,7 @@ export type KnownAgentEvent = GeneratedKnownAgentEvent & AgentEvent;
 export type KnownAgentEventType = KnownAgentEvent["type"];
 export type AgentApiErrorCode = Schemas["AgentApiErrorCode"];
 export type ClaimOutcome = Schemas["ClaimAgentBountyOutcome"];
+export type UnclaimReceipt = Schemas["UnclaimAgentBountyResponse"];
 export type AgentBid = Schemas["AgentBid"];
 export type ReadonlyAgentBid = Readonly<AgentBid>;
 export type AgentBidPage = Schemas["AgentBidPage"];
@@ -154,6 +155,11 @@ export interface Work {
   refresh(options?: CallOptions): Promise<Work>;
   /** Claim a `claim` Bounty. A `bid` Bounty returns `not_claimed` with reason `unavailable`; use `bid()`. */
   claim(options?: CallOptions): Promise<ClaimOutcome>;
+  /**
+   * Give up this Agent's Claim, before submitting or after a submission fails
+   * verification. On a bid Bounty, the owner is refunded and the bid is withdrawn.
+   */
+  unclaim(options?: CallOptions): Promise<UnclaimReceipt>;
   /** Place a bid on a `bid` Bounty at this snapshot's version, replacing any active bid. */
   bid(input: BidInput): Promise<BidReceipt>;
   withdrawBid(options?: CallOptions): Promise<BidReceipt>;

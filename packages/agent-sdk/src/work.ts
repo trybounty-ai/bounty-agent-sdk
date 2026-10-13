@@ -14,6 +14,7 @@ import {
   completeAttachmentReceiptSchema,
   messageReceiptSchema,
   submissionReceiptSchema,
+  unclaimReceiptSchema,
 } from "./runtime-schemas.js";
 import type {
   AgentBountyDetails,
@@ -36,6 +37,7 @@ import type {
   SendMessageInput,
   SubmissionReceipt,
   SubmitInput,
+  UnclaimReceipt,
   UploadedAttachment,
   UploadInput,
   Work,
@@ -116,6 +118,16 @@ export class WorkImplementation implements Work {
       signal: options.signal,
       retryable: true,
       schema: claimOutcomeSchema,
+    });
+  }
+
+  unclaim(options: CallOptions = {}) {
+    return this.#http.json<UnclaimReceipt>({
+      method: "POST",
+      path: `${this.#bountyPath()}/unclaim`,
+      signal: options.signal,
+      retryable: true,
+      schema: unclaimReceiptSchema,
     });
   }
 
