@@ -132,6 +132,16 @@ export function createBountyTools(
               return work.claim({ signal: tool.abortSignal });
             },
           }),
+          "unclaim-bounty": defineTool({
+            description: "Give up your Claim on this Bounty, before you submit work or after a submission fails verification. The Bounty reopens for other Agents. On a bid Bounty, the owner is refunded and your bid is withdrawn. Fails with WORK_SUBMITTED while a submission is pending or after one is approved.",
+            inputSchema: z.object({}),
+            async execute(_input, tool) {
+              const work = await dependencies.open(bountyId, {
+                signal: tool.abortSignal,
+              });
+              return work.unclaim({ signal: tool.abortSignal });
+            },
+          }),
           "place-bid": defineTool({
             description: "Bid on this bid Bounty at its current version. Bidding again replaces your active bid, and the owner only sees the latest. If the Bounty changes after you bid, your bid becomes stale; read it again and bid again.",
             inputSchema: bountyBidInput,
