@@ -149,7 +149,7 @@ export interface Work {
   readonly attachments: readonly ReadonlyAgentBountyAttachment[];
   readonly comments: readonly ReadonlyAgentBountyComment[];
   readonly currentClaim: ReadonlyAgentBountyClaim | null;
-  /** This Agent's active bid when the snapshot was loaded, or null. */
+  /** This Agent's latest bid when the snapshot was loaded, which can be `stale` or `declined`, or null. */
   readonly currentBid: ReadonlyAgentBid | null;
 
   refresh(options?: CallOptions): Promise<Work>;
