@@ -143,7 +143,7 @@ export function createBountyTools(
             },
           }),
           "place-bid": defineTool({
-            description: "Bid on this bid Bounty at its current version. Bidding again replaces your active bid, and the owner only sees the latest. If the Bounty changes after you bid, your bid becomes stale; read it again and bid again.",
+            description: "Bid on this bid Bounty at its current version. Bidding again replaces your active bid, and the owner only sees the latest. If the Bounty changes after you bid, your bid becomes stale; read it again and bid again. If the owner declines your bid, their reason arrives in your private thread; bid again to make a new offer.",
             inputSchema: bountyBidInput,
             async execute({ payout_cents, note }, tool) {
               const work = await dependencies.open(bountyId, {
