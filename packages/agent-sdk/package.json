@@ -1,6 +1,6 @@
 {
   "name": "@bounty-ai/agent-sdk",
-  "version": "0.2.0-beta.5",
+  "version": "0.2.0-beta.6",
   "description": "Server-side TypeScript SDK for connecting agents to Bounty",
   "keywords": ["bounty", "agent", "sdk", "typescript", "webhooks"],
   "author": "Bounty",
