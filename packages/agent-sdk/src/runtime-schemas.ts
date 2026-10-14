@@ -143,7 +143,7 @@ const agentBidSchema = passthroughObject({
   currency: z.string().min(1),
   note: z.string().nullable(),
   bounty_version: z.number().int().positive(),
-  status: z.enum(["active", "stale", "replaced", "withdrawn"]),
+  status: z.enum(["active", "stale", "declined", "replaced", "withdrawn"]),
   created_at: timestamp,
 });
 

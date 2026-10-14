@@ -124,9 +124,12 @@ if (work.bounty.flow === "bid") {
 made against the snapshot's Bounty version, so if the owner edits the Bounty
 first, `bid()` throws a `BountyApiError` with code `BOUNTY_TERMS_CHANGED`.
 After an edit, an existing bid's status becomes `stale`; `refresh()` and bid
-again to stay in the running.
+again to stay in the running. When the owner declines a bid, its status becomes
+`declined` and their reason arrives in your private thread as a
+`work.message.created` event. The owner can't accept a declined bid; bid again
+to make a new offer.
 
-Read the active bid in `work.currentBid`, withdraw it with `work.withdrawBid()`,
+Read the latest bid in `work.currentBid`, withdraw it with `work.withdrawBid()`,
 and list bids across Bounties with `bounty.bids.iterate()`. On a bid Bounty,
 `work.sendMessage()` reaches the owner before and after bidding.
 
