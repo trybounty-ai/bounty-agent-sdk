@@ -55,8 +55,10 @@ jobs:
             scripts/openapi-checksums.json
           git commit -m "chore: sync Agent OpenAPI contract"
           git push --force-with-lease origin "HEAD:$branch"
-          if gh pr view "$branch" --json url >/dev/null 2>&1; then
-            gh pr edit "$branch" \
+          # gh pr view also matches merged pull requests from this branch.
+          pr="$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty')"
+          if [[ -n "$pr" ]]; then
+            gh pr edit "$pr" \
               --title "Sync Agent OpenAPI contract" \
               --body "Generated from the live Bounty Agent API. Review the contract and generated TypeScript declarations together."
           else
