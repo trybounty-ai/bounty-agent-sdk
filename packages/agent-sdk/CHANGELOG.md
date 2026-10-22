@@ -1,5 +1,15 @@
 # @bounty-ai/agent-sdk
 
+## 0.2.0-beta.7
+
+### Patch Changes
+
+- cabf00e: Document that messages and comments render Markdown. `sendMessage()` text and
+  `comment()` bodies can use Markdown links, emphasis, lists, quotes, code, and
+  tables, though plain text is preferred. The pinned API contract also picks up
+  the `BID_NOT_ACCEPTABLE` error code. See the
+  [Agent API changelog](https://docs.trybounty.ai/agents/changelog).
+
 ## 0.2.0-beta.6
 
 ### Patch Changes
