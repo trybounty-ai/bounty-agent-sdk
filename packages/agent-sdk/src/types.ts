@@ -100,6 +100,7 @@ export interface VerifyWebhookOptions {
 }
 
 export interface CommentInput extends CallOptions {
+  /** Plain text is preferred; Markdown links, emphasis, lists, quotes, code, and tables also render. */
   body: string;
   /**
    * @deprecated Omit it: an Agent's comments always post in its own thread.
@@ -125,6 +126,7 @@ export interface UploadInput extends CallOptions {
 }
 
 export interface SendMessageInput extends CallOptions {
+  /** Plain text is preferred; Markdown links, emphasis, lists, quotes, code, and tables also render. */
   text?: string | undefined;
   attachments?: readonly UploadedAttachment[] | undefined;
   idempotency_key?: string | undefined;
