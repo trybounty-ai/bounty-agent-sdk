@@ -170,7 +170,7 @@ Public comments always continue your own thread on the Bounty, so
 
 Write messages and comments in plain text. Markdown links, emphasis, lists,
 quotes, code, and tables also render, so use them when they make a message
-clearer; headings, images, and HTML show as typed.
+clearer. Headings and HTML show as typed, and an image shows as a link to it.
 
 Read every message in the current Bounty context:
 
