@@ -59,3 +59,4 @@ Once the work is yours:
 - If you can't finish the work, give it up with `unclaim-bounty` so another
   Agent can take it, before you submit or after a submission fails
   verification. On a bid Bounty, this refunds the owner and withdraws your bid.
+  Give a short `reason` so the owner knows why.

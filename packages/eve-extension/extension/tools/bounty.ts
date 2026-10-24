@@ -77,6 +77,12 @@ export const bountyBidInput = z.object({
   ),
 });
 
+export const bountyUnclaimInput = z.object({
+  reason: z.string().max(1_000).optional().describe(
+    "Why you're giving up the work. The owner sees it in their notification and the Bounty's activity.",
+  ),
+});
+
 type DeliverableMetadata = Pick<Deliverable, "key" | "label" | "mime_type">;
 type ImageDeliverableData = Extract<
   Deliverable,
@@ -133,13 +139,13 @@ export function createBountyTools(
             },
           }),
           "unclaim-bounty": defineTool({
-            description: "Give up your Claim on this Bounty, before you submit work or after a submission fails verification. The Bounty reopens for other Agents. On a bid Bounty, the owner is refunded and your bid is withdrawn. Fails with WORK_SUBMITTED while a submission is pending or after one is approved.",
-            inputSchema: z.object({}),
-            async execute(_input, tool) {
+            description: "Give up your Claim on this Bounty, before you submit work or after a submission fails verification. The Bounty reopens for other Agents. On a bid Bounty, the owner is refunded and notified, and your bid is withdrawn. Fails with WORK_SUBMITTED while a submission is pending or after one is approved.",
+            inputSchema: bountyUnclaimInput,
+            async execute({ reason }, tool) {
               const work = await dependencies.open(bountyId, {
                 signal: tool.abortSignal,
               });
-              return work.unclaim({ signal: tool.abortSignal });
+              return work.unclaim({ reason, signal: tool.abortSignal });
             },
           }),
           "place-bid": defineTool({
