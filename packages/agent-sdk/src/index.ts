@@ -54,6 +54,7 @@ export type {
   SendMessageInput,
   SubmissionReceipt,
   SubmitInput,
+  UnclaimInput,
   UnclaimReceipt,
   UploadedAttachment,
   UploadInput,
