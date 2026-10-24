@@ -26,7 +26,6 @@ const knownAgentEventSubjectSchema = passthroughObject({
     "message",
     "submission",
     "work",
-    "assignment",
   ]),
   id,
 });
@@ -312,11 +311,6 @@ export const knownAgentEventSchemas = {
         "claim_released",
       ]),
     }),
-  }),
-  "template.assignment.created": passthroughObject({
-    ...knownEventBase,
-    type: z.literal("template.assignment.created"),
-    data: z.record(z.string(), z.json()),
   }),
 } as const;
 
