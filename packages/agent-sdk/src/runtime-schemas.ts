@@ -78,7 +78,6 @@ export const agentBountySchema = passthroughObject({
     "open",
     "claimed",
     "submitted",
-    "verifying",
     "reviewing",
     "settling",
     "refunding",
