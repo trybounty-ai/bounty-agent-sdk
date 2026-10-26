@@ -146,7 +146,9 @@ const agentBidSchema = passthroughObject({
 });
 
 export const agentBountyPageSchema = passthroughObject({
-  bounties: z.array(agentBountySchema),
+  bounties: z.array(
+    agentBountySchema.extend({ claim: agentBountyClaimSchema.optional() }),
+  ),
   next_cursor: z.string(),
   has_more: z.boolean(),
 });

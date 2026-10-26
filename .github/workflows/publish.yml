@@ -43,10 +43,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          for tarball in release-artifacts/*.tgz; do
-            npm publish "./$tarball" --access public --tag beta --ignore-scripts --dry-run
-          done
+          jq -r '.packages[] | select(.publish) | [.tarball, .tag] | @tsv' release-artifacts/release-manifest.json |
+            while IFS=$'\t' read -r tarball tag; do
+              npm publish "./release-artifacts/$tarball" --access public --tag "$tag" --ignore-scripts --dry-run
+            done
       - name: Upload release artifacts
         if: ${{ !inputs.dry_run }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -85,14 +85,14 @@ jobs:
           else
             echo "No unpublished package artifacts to verify."
           fi
-      - name: Publish beta packages
+      - name: Publish packages
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          for tarball in release-artifacts/*.tgz; do
-            npm publish "./$tarball" --access public --tag beta --ignore-scripts --provenance
-          done
+          jq -r '.packages[] | select(.publish) | [.tarball, .tag] | @tsv' release-artifacts/release-manifest.json |
+            while IFS=$'\t' read -r tarball tag; do
+              npm publish "./release-artifacts/$tarball" --access public --tag "$tag" --ignore-scripts --provenance
+            done
 
   tag:
     needs: publish

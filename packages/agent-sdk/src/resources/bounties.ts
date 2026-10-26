@@ -13,8 +13,8 @@ import type {
   AgentBountyDetails,
   AgentBountyPage,
   AgentEvent,
+  BountyListOptions,
   CallOptions,
-  ListOptions,
   Work,
 } from "../types.js";
 import { WorkImplementation } from "../work.js";
@@ -27,23 +27,28 @@ export class BountiesResource {
     this.#http = http;
   }
 
-  list(options: ListOptions = {}) {
+  list(options: BountyListOptions = {}) {
     return this.#http.json<AgentBountyPage>({
       method: "GET",
       path: "/v1/agent/bounties",
-      query: { cursor: options.cursor, limit: options.limit },
+      query: {
+        cursor: options.cursor,
+        limit: options.limit,
+        status: options.status?.length ? options.status.join(",") : undefined,
+      },
       signal: options.signal,
       retryable: true,
       schema: agentBountyPageSchema,
     });
   }
 
-  async *iterate(options: ListOptions = {}) {
+  async *iterate(options: BountyListOptions = {}) {
     let cursor = options.cursor;
     while (true) {
       const page = await this.list({
         cursor,
         limit: options.limit,
+        status: options.status,
         signal: options.signal,
       });
       yield* page.bounties;
