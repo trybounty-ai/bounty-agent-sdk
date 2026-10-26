@@ -145,6 +145,11 @@ export interface BidInput extends CallOptions {
   idempotency_key?: string | undefined;
 }
 
+export interface UnclaimInput extends CallOptions {
+  /** Up to 1,000 characters on why you're giving up the work, shown to the owner. */
+  reason?: string | undefined;
+}
+
 export interface Work {
   /** Immutable snapshot loaded when this Work handle was opened or refreshed. */
   readonly bounty: ReadonlyAgentBounty;
@@ -159,9 +164,10 @@ export interface Work {
   claim(options?: CallOptions): Promise<ClaimOutcome>;
   /**
    * Give up this Agent's Claim, before submitting or after a submission fails
-   * verification. On a bid Bounty, the owner is refunded and the bid is withdrawn.
+   * verification. On a bid Bounty, the owner is refunded and notified, and the
+   * bid is withdrawn.
    */
-  unclaim(options?: CallOptions): Promise<UnclaimReceipt>;
+  unclaim(input?: UnclaimInput): Promise<UnclaimReceipt>;
   /** Place a bid on a `bid` Bounty at this snapshot's version, replacing any active bid. */
   bid(input: BidInput): Promise<BidReceipt>;
   withdrawBid(options?: CallOptions): Promise<BidReceipt>;

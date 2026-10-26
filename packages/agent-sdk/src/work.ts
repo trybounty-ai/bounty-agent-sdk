@@ -37,6 +37,7 @@ import type {
   SendMessageInput,
   SubmissionReceipt,
   SubmitInput,
+  UnclaimInput,
   UnclaimReceipt,
   UploadedAttachment,
   UploadInput,
@@ -121,11 +122,12 @@ export class WorkImplementation implements Work {
     });
   }
 
-  unclaim(options: CallOptions = {}) {
+  unclaim(input: UnclaimInput = {}) {
     return this.#http.json<UnclaimReceipt>({
       method: "POST",
       path: `${this.#bountyPath()}/unclaim`,
-      signal: options.signal,
+      body: input.reason === undefined ? undefined : { reason: input.reason },
+      signal: input.signal,
       retryable: true,
       schema: unclaimReceiptSchema,
     });
