@@ -20,8 +20,8 @@ Merging the version pull request publishes the new versions. The **Publish
 packages** workflow runs when a package's `package.json` changes on `main` and
 publishes only versions that are not already on npm, so other merges publish
 nothing. To inspect packages without publishing, run the workflow manually from
-`main`; manual runs default to a dry run. Releases use the npm `beta` tag, so
-they do not replace `latest`.
+`main`; manual runs default to a dry run. Prerelease versions, such as
+`0.3.0-beta.0`, use the npm `beta` tag; other versions use `latest`.
 
 After publishing, the workflow tags each package version, such as
 `@bounty-ai/agent-sdk@0.2.0-beta.2`, and creates a GitHub Release whose notes
@@ -29,10 +29,10 @@ are that version's section of the package's `CHANGELOG.md`. Prerelease
 versions are marked as prereleases. Re-running the workflow skips existing
 tags and Releases.
 
-The packages remain pre-1.0 while their public interfaces settle. Changesets is
-in `beta` prerelease mode, so version pull requests continue the prerelease
-sequence instead of promoting a package to a stable release. Leave prerelease
-mode only when the packages are ready for stable versions.
+The packages remain pre-1.0 while their public interfaces settle, so a minor
+version can include breaking changes. To publish betas again, run
+`pnpm changeset pre enter beta`; version pull requests then continue a
+prerelease sequence until `pnpm changeset pre exit`.
 
 The publish job is attached to the `npm` GitHub environment. Configure that
 environment with required reviewer approval before the first release.

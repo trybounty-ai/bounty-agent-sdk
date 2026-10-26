@@ -6,15 +6,9 @@ import { join, resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..");
 const packageDirectories = ["packages/agent-sdk", "packages/flue"];
 const args = process.argv.slice(2);
-const tagIndex = args.indexOf("--tag");
 const outputIndex = args.indexOf("--out");
-const tag = tagIndex === -1 ? undefined : args.at(tagIndex + 1);
 const outputArgument =
   outputIndex === -1 ? undefined : args.at(outputIndex + 1);
-
-if (tag !== "beta" && tag !== "latest") {
-  throw new Error("Pass --tag beta or --tag latest.");
-}
 
 if (!outputArgument) {
   throw new Error("Pass --out with a release artifact directory.");
@@ -48,6 +42,7 @@ for (const packageDirectory of packageDirectories) {
     await readFile(join(root, packageDirectory, "package.json"), "utf8"),
   );
   const packageVersion = `${manifest.name}@${manifest.version}`;
+  const tag = manifest.version.includes("-") ? "beta" : "latest";
   const lookup = run("npm", ["view", packageVersion, "version", "--json"], {
     stdio: "pipe",
   });
