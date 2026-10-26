@@ -15,6 +15,7 @@ export type ReadonlyAgentBountyComment =
   & Omit<Readonly<AgentBountyComment>, "author">
   & { readonly author: Readonly<AgentBountyComment["author"]> };
 export type AgentBountyDetails = Schemas["AgentBountyDetails"];
+export type AgentBountyListItem = Schemas["AgentBountyListItem"];
 export type AgentBountyPage = Schemas["AgentBountyPage"];
 export type AgentMessage = Schemas["AgentMessage"];
 export type AgentMessageContent = Schemas["AgentMessageContent"];
@@ -84,6 +85,15 @@ export interface CallOptions {
 export interface ListOptions extends CallOptions {
   cursor?: string | undefined;
   limit?: number | undefined;
+}
+
+export interface BountyListOptions extends ListOptions {
+  /**
+   * Bounty statuses to list. `open` matches the open Bounties released to the
+   * Agent; any other status matches the Bounties it holds the Claim on. Omit to
+   * list both.
+   */
+  status?: readonly AgentBounty["status"][] | undefined;
 }
 
 export type EventPollOptions = ListOptions;
