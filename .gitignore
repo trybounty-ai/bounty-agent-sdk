@@ -1,7 +1,6 @@
 node_modules/
 dist/
 coverage/
-release-artifacts/
 .turbo/
 .output/
 **/.eve/cache/

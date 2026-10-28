@@ -1,29 +1,45 @@
-name: Publish packages
+name: Release packages
 
 on:
   push:
     branches: [main]
-    paths:
-      - packages/agent-sdk/package.json
-      - packages/flue/package.json
   workflow_dispatch:
-    inputs:
-      dry_run:
-        description: Build and inspect the packages without publishing them
-        required: true
-        default: true
-        type: boolean
 
 concurrency:
-  group: publish-packages
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 permissions: {}
 
 jobs:
-  prepare:
+  select-mode:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      mode: ${{ steps.select-mode.outputs.mode }}
+      publish-plan-artifact-id: ${{ steps.select-mode.outputs.publish-plan-artifact-id }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Select Changesets mode
+        id: select-mode
+        uses: changesets/action/select-mode@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+
+  version:
+    needs: select-mode
+    if: needs.select-mode.outputs.mode == 'version'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -35,30 +51,52 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Create release app token
+        id: release-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Create or update the version pull request
+        uses: changesets/action/version@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          github-token: ${{ steps.release-app.outputs.token }}
+          script: pnpm version-packages
+          commit-message: Version packages
+          pr-title: Version packages
+          pr-draft: create
+
+  pack:
+    needs: select-mode
+    if: needs.select-mode.outputs.mode == 'publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
       - run: pnpm install --frozen-lockfile
       - run: pnpm release:check
-      - run: pnpm release:pack
-      - name: Inspect package publication
-        if: inputs.dry_run
-        shell: bash
-        run: |
-          set -euo pipefail
-          jq -r '.packages[] | select(.publish) | [.tarball, .tag] | @tsv' release-artifacts/release-manifest.json |
-            while IFS=$'\t' read -r tarball tag; do
-              npm publish "./release-artifacts/$tarball" --access public --tag "$tag" --ignore-scripts --dry-run
-            done
-      - name: Upload release artifacts
-        if: ${{ !inputs.dry_run }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Pack packages
+        id: pack
+        uses: changesets/action/pack@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
-          name: release-packages
-          path: release-artifacts
-          if-no-files-found: error
-          retention-days: 1
+          publish-plan-artifact-id: ${{ needs.select-mode.outputs.publish-plan-artifact-id }}
 
   publish:
-    needs: prepare
-    if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
+    needs: pack
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: npm
@@ -66,37 +104,26 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
           package-manager-cache: false
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: release-packages
-          path: release-artifacts
-      - name: Verify release artifacts
-        working-directory: release-artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -s SHA256SUMS ]]; then
-            sha256sum --check SHA256SUMS
-          else
-            echo "No unpublished package artifacts to verify."
-          fi
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Publish packages
-        shell: bash
-        run: |
-          set -euo pipefail
-          jq -r '.packages[] | select(.publish) | [.tarball, .tag] | @tsv' release-artifacts/release-manifest.json |
-            while IFS=$'\t' read -r tarball tag; do
-              npm publish "./release-artifacts/$tarball" --access public --tag "$tag" --ignore-scripts --provenance
-            done
+        uses: changesets/action/publish@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        env:
+          pnpm_config_provenance: "true"
+        with:
+          pack-dir-artifact-id: ${{ needs.pack.outputs.pack-dir-artifact-id }}
+          push-git-tags: false
+          create-github-releases: false
 
-  tag:
+  release:
     needs: publish
-    if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -106,51 +133,13 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          name: release-packages
-          path: release-artifacts
-      - name: Create package tags
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          jq -r '.packages[] | "\(.name)@\(.version)"' release-artifacts/release-manifest.json |
-            while IFS= read -r tag; do
-              if git rev-parse --quiet --verify "refs/tags/${tag}" >/dev/null; then
-                continue
-              fi
-              git tag --annotate "$tag" --message "$tag"
-            done
-      - name: Push package tags
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push --follow-tags
-      - name: Create GitHub Releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          jq -r '.packages[] | [.name, .version, .directory] | @tsv' release-artifacts/release-manifest.json |
-            while IFS=$'\t' read -r name version directory; do
-              tag="${name}@${version}"
-              if gh release view "$tag" >/dev/null 2>&1; then
-                continue
-              fi
-              awk -v heading="## ${version}" '
-                $0 == heading { found = 1; next }
-                found && /^## / { exit }
-                found { print }
-              ' "${directory}/CHANGELOG.md" > release-notes.md
-              prerelease=()
-              if [[ "$version" == *-* ]]; then
-                prerelease=(--prerelease)
-              fi
-              gh release create "$tag" --verify-tag --title "$tag" \
-                --notes-file release-notes.md "${prerelease[@]}"
-            done
+          node-version: 24
+          package-manager-cache: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Create tags and GitHub Releases
+        uses: changesets/action/publish@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          script: pnpm exec changeset git-tag

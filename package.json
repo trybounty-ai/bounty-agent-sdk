@@ -20,8 +20,7 @@
     "openapi:update": "node scripts/update-openapi.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release:check": "pnpm openapi:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test",
-    "release:pack": "node scripts/prepare-release.mjs --out release-artifacts"
+    "release:check": "pnpm openapi:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.1",
