@@ -7,46 +7,54 @@ npm needs a Changeset:
 pnpm changeset
 ```
 
-After the change reaches `main`, the **Version packages** workflow opens or
-updates a draft pull request containing the version and changelog changes.
-Review and merge that pull request normally.
+Releases run through the **Release packages** workflow, which uses the
+[`changesets/action`](https://github.com/changesets/action) sub-actions as in
+the Changesets
+[trusted publishing guide](https://changesets.dev/guide/automating). Every push
+to `main` selects one of two modes:
 
-GitHub Actions must be allowed to create pull requests in the repository
-settings. The workflow uses the built-in token by default. Set
-`RELEASE_GITHUB_TOKEN` to a bot or GitHub App token if version pull requests
-must trigger the normal pull-request CI automatically.
+- While Changesets are pending, the workflow opens or updates a draft
+  **Version packages** pull request containing the version and changelog
+  changes. Review and merge that pull request normally.
+- Once no Changesets are pending, the workflow publishes the package versions
+  that are not on npm yet and tags and releases the versions that have no git
+  tag yet. Other merges publish nothing.
 
-Merging the version pull request publishes the new versions. The **Publish
-packages** workflow runs when a package's `package.json` changes on `main` and
-publishes only versions that are not already on npm, so other merges publish
-nothing. To inspect packages without publishing, run the workflow manually from
-`main`; manual runs default to a dry run. Prerelease versions, such as
-`0.3.0-beta.0`, use the npm `beta` tag; other versions use `latest`.
+Run the workflow manually from `main` to retry a failed publish. If a version
+reached npm but its tag or GitHub Release was not created, create them by hand;
+neither a new run nor a re-run creates them for versions already on npm.
 
-After publishing, the workflow tags each package version, such as
+The version pull request is created with the GitHub App configured by
+`RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY`, so it triggers the
+normal pull-request CI.
+
+Prerelease versions, such as `0.3.0-beta.0`, are published while in
+prerelease mode and use the npm `beta` tag; other versions use `latest`. After
+publishing, the workflow tags each package version, such as
 `@bounty-ai/agent-sdk@0.2.0-beta.2`, and creates a GitHub Release whose notes
 are that version's section of the package's `CHANGELOG.md`. Prerelease
-versions are marked as prereleases. Re-running the workflow skips existing
-tags and Releases.
+versions are marked as prereleases.
 
 The packages remain pre-1.0 while their public interfaces settle, so a minor
 version can include breaking changes. To publish betas again, run
 `pnpm changeset pre enter beta`; version pull requests then continue a
 prerelease sequence until `pnpm changeset pre exit`.
 
-The publish job is attached to the `npm` GitHub environment. Configure that
-environment with required reviewer approval before the first release.
+## Job isolation
 
-Release checks and package scripts run in an unprivileged preparation job. The
-workflow transfers checksummed tarballs to a minimal OIDC publishing job, which
-publishes with lifecycle scripts disabled. Repository write access exists only
-in the final tag job and is not available while dependencies or package scripts
-run.
+Release checks and package scripts run only in the unprivileged `pack` job,
+which uploads the tarballs as an artifact. The `publish` job is attached to the
+`npm` GitHub environment and is the only job with an OIDC token. It installs
+dependencies with lifecycle scripts disabled, publishes the packed tarballs,
+which pnpm does without running package scripts, and then creates the tags and
+GitHub Releases. Repository write access exists only in that job and in the
+`version` job through the GitHub App token.
 
 ## npm authentication
 
-`@bounty-ai/agent-sdk` already exists on npm and can use trusted publishing now.
-Configure its npm trusted publisher with:
+Both packages publish with npm trusted publishing and provenance. Do not store
+an npm token in GitHub. Each package's npm trusted publisher is configured
+with:
 
 - GitHub owner: `trybounty-ai`
 - Repository: `bounty-agent-sdk`
@@ -54,21 +62,6 @@ Configure its npm trusted publisher with:
 - Environment: `npm`
 - Allowed action: `npm publish`
 
-An npm package must exist before trusted publishing can be configured.
-`@bounty-ai/flue` therefore needs a one-time local bootstrap release from an
-audited tarball using interactive npm authentication and 2FA. Do not store an
-npm token in GitHub. After that first release, configure the same trusted
-publisher for Flue and log out of the temporary npm session.
-
-The workflow publishes through the npm CLI, which supports OIDC and automatic
-provenance. pnpm is still used to create each tarball so workspace dependency
-ranges are converted correctly before publication.
-
-## Deferred
-
-- Consider publishing through `changesets/action`, which creates tags and
-  GitHub Releases itself and would replace this repository's custom publish
-  steps. Adopt it only if it can keep the current isolation:
-  npm publishing in a minimal OIDC job with lifecycle scripts disabled, and
-  repository write access only in the final tag job. Until then, the tag job
-  creates the same Releases with `gh release create`.
+The publish job publishes through pnpm, which exchanges the OIDC token for npm
+credentials. It sets `pnpm_config_provenance`, so a publish fails instead of
+continuing without a provenance statement.
