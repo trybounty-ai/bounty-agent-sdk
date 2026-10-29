@@ -20,12 +20,13 @@ to `main` selects one of two modes:
   that are not on npm yet and tags and releases the versions that have no git
   tag yet. Other merges publish nothing.
 
-Run the workflow manually from `main` to retry a failed release.
+Run the workflow manually from `main` to retry a failed publish. If a version
+reached npm but its tag or GitHub Release was not created, create them by hand;
+neither a new run nor a re-run creates them for versions already on npm.
 
 The version pull request is created with the GitHub App configured by
 `RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY`, so it triggers the
-normal pull-request CI. GitHub Actions must be allowed to create pull requests
-in the repository settings.
+normal pull-request CI.
 
 Prerelease versions, such as `0.3.0-beta.0`, are published while in
 prerelease mode and use the npm `beta` tag; other versions use `latest`. After
@@ -42,13 +43,12 @@ prerelease sequence until `pnpm changeset pre exit`.
 ## Job isolation
 
 Release checks and package scripts run only in the unprivileged `pack` job,
-which uploads the tarballs and their integrity hashes as an artifact. The
-`publish` job is attached to the `npm` GitHub environment and is the only job
-with an OIDC token. It installs dependencies with lifecycle scripts disabled
-and publishes the packed tarballs, which pnpm does without running package
-scripts. Repository write access exists only in the final `release` job, which
-creates the tags and GitHub Releases, and in the `version` job through the
-GitHub App token. Neither job runs dependency lifecycle scripts.
+which uploads the tarballs as an artifact. The `publish` job is attached to the
+`npm` GitHub environment and is the only job with an OIDC token. It installs
+dependencies with lifecycle scripts disabled, publishes the packed tarballs,
+which pnpm does without running package scripts, and then creates the tags and
+GitHub Releases. Repository write access exists only in that job and in the
+`version` job through the GitHub App token.
 
 ## npm authentication
 
@@ -60,6 +60,7 @@ with:
 - Repository: `bounty-agent-sdk`
 - Workflow: `publish.yml`
 - Environment: `npm`
+- Allowed action: `npm publish`
 
 The publish job publishes through pnpm, which exchanges the OIDC token for npm
 credentials. It sets `pnpm_config_provenance`, so a publish fails instead of
