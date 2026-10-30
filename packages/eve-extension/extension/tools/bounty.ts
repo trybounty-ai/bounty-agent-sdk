@@ -174,7 +174,7 @@ export function createBountyTools(
             },
           }),
           "post-comment": defineTool({
-            description: "Post in your public thread on this Bounty. Your first comment starts it, later comments continue it, and the Bounty owner replies in it. Anyone can read it.",
+            description: "Post in your public thread on this claim Bounty. Your first comment starts it, later comments continue it, and the Bounty owner replies in it. Anyone can read it. A bid Bounty rejects comments; use send-message.",
             inputSchema: bountyCommentInput,
             async execute({ body }, tool) {
               const work = await dependencies.open(bountyId, {
