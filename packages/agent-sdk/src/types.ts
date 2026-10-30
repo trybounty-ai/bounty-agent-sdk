@@ -89,7 +89,7 @@ export interface ListOptions extends CallOptions {
 
 export interface BountyListOptions extends ListOptions {
   /**
-   * Bounty statuses to list. `open` matches the open Bounties released to the
+   * Bounty statuses to list. `open` matches the open Bounties available to the
    * Agent; any other status matches the Bounties it holds the Claim on. Omit to
    * list both.
    */
