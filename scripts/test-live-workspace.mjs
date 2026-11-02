@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import Bounty from "../packages/agent-sdk/dist/index.js";
+import Bounty, { BountyApiError } from "../packages/agent-sdk/dist/index.js";
 
 const apiKey = process.env.BOUNTY_AGENT_API_KEY;
 const baseURL = process.env.BOUNTY_API_BASE_URL;
@@ -20,20 +20,6 @@ async function drainEvents(cursor) {
   }
 }
 
-async function waitForEventTypes(cursor, requiredTypes) {
-  const found = new Set();
-  let nextCursor = cursor;
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const page = await bounty.events.poll({ cursor: nextCursor, limit: 100 });
-    nextCursor = page.next_cursor;
-    for (const event of page.events) {
-      if (requiredTypes.has(event.type)) found.add(event.type);
-    }
-    if ([...requiredTypes].every((type) => found.has(type))) return [...found];
-  }
-  return [...found];
-}
-
 const initial = await drainEvents(undefined);
 const bounties = [];
 for await (const item of bounty.bounties.iterate({ limit: 100 })) bounties.push(item);
@@ -48,55 +34,43 @@ assert(rejectionEvent.data.bounty_id, "The revision event did not identify a Bou
 
 const openWork = await bounty.bounties.open(openSummary._id);
 assert.equal(openWork.bounty.status, "open", "Reset the workspace before running this check");
-assert(openWork.comments.length >= 3, "Public discussion was unavailable before Claim");
+assert.equal(openWork.bounty.flow, "bid", "The open workspace Bounty should take bids");
+assert.equal(openWork.comments.length, 0, "A Bounty that takes bids has no public discussion");
 
-const commentInput = {
-  body: "Live SDK conformance: public discussion remains available before Claim.",
-  idempotency_key: "workspace-live:open-comment:v1",
-};
-const comment = await openWork.comment(commentInput);
-const commentReplay = await openWork.comment(commentInput);
-assert.equal(commentReplay.comment_id, comment.comment_id);
-assert.equal(commentReplay.replayed, true);
-
-const claim = await openWork.claim();
-assert.equal(claim.outcome, "claimed");
-const claimReplay = await openWork.claim();
-assert.equal(claimReplay.outcome, "claimed");
-assert.equal(claimReplay.replayed, true);
-
-const claimedWork = await openWork.refresh();
-assert.equal(claimedWork.bounty.status, "claimed");
-assert(claimedWork.currentClaim, "Claim was absent from refreshed work");
+await assert.rejects(
+  openWork.comment({
+    body: "Live SDK conformance: public comments are closed on a Bounty that takes bids.",
+    idempotency_key: "workspace-live:open-comment:v2",
+  }),
+  (error) => error instanceof BountyApiError && error.code === "COMMENTS_CLOSED",
+);
 
 const messageInput = {
-  text: "Live SDK conformance: the Agent can send a private progress update.",
-  idempotency_key: "workspace-live:message:v1",
+  text: "Live SDK conformance: the Agent can ask the owner a private question before bidding.",
+  idempotency_key: "workspace-live:open-message:v1",
 };
-const message = await claimedWork.sendMessage(messageInput);
-const messageReplay = await claimedWork.sendMessage(messageInput);
+const message = await openWork.sendMessage(messageInput);
+const messageReplay = await openWork.sendMessage(messageInput);
 assert.equal(messageReplay.message._id, message.message._id);
 assert.equal(messageReplay.replayed, true);
 
 const messages = [];
-for await (const item of claimedWork.messages({ limit: 100 })) messages.push(item);
+for await (const item of openWork.messages({ limit: 100 })) messages.push(item);
 assert(messages.some((item) => item._id === message.message._id));
 
-const submissionInput = {
-  deliverables: [
-    {
-      key: "result",
-      type: "text",
-      label: "Conformance result",
-      data: { text: "The raw SDK completed the isolated workspace lifecycle." },
-    },
-  ],
-  idempotency_key: "workspace-live:submission:v1",
+const bidInput = {
+  payout_cents: 2_400,
+  note: "Live SDK conformance bid.",
+  idempotency_key: "workspace-live:bid:v1",
 };
-const submission = await claimedWork.submit(submissionInput);
-const submissionReplay = await claimedWork.submit(submissionInput);
-assert.equal(submissionReplay.submission_id, submission.submission_id);
-assert.equal(submissionReplay.replayed, true);
+const bid = await openWork.bid(bidInput);
+const bidReplay = await openWork.bid(bidInput);
+assert.equal(bidReplay.bid.id, bid.bid.id);
+assert.equal(bidReplay.replayed, true);
+
+const biddingWork = await openWork.refresh();
+assert.equal(biddingWork.currentBid?.id, bid.bid.id);
+assert.equal(biddingWork.currentBid?.status, "active");
 
 const rejectedWork = await bounty.bounties.open(rejectionEvent.data.bounty_id);
 assert.equal(rejectedWork.bounty.title, "AI engineering podcast research");
@@ -120,20 +94,19 @@ assert.equal(revision.version, 2);
 assert.equal(revisionReplay.submission_id, revision.submission_id);
 assert.equal(revisionReplay.replayed, true);
 
-const recoveredTypes = await waitForEventTypes(
-  initial.cursor,
-  new Set(["bounty.claimed"]),
+assert(
+  initial.events.some(
+    (event) => event.type === "bounty.available" && event.data.bounty_id === openSummary._id,
+  ),
+  "The open Bounty's availability event was absent from recovery",
 );
-assert(recoveredTypes.includes("bounty.claimed"), "Claim event was absent from recovery");
 
 console.log(JSON.stringify({
   agentApi: "passed",
   bountiesVisible: bounties.length,
-  publicCommentReplay: commentReplay.replayed,
-  claimReplay: claimReplay.replayed,
+  publicCommentsClosed: true,
   privateMessageReplay: messageReplay.replayed,
-  submissionReplay: submissionReplay.replayed,
+  bidReplay: bidReplay.replayed,
   revisionVersion: revision.version,
   revisionReplay: revisionReplay.replayed,
-  recoveredEventTypes: recoveredTypes.sort(),
 }, null, 2));
