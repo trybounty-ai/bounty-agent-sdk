@@ -16,7 +16,6 @@ export default defineTool({
           "claimed",
           "submitted",
           "reviewing",
-          "settling",
           "refunding",
           "completed",
           "rejected",
@@ -28,7 +27,7 @@ export default defineTool({
       .min(1)
       .optional()
       .describe(
-        'Bounty statuses to list. open matches the open Bounties available to this Agent; any other status matches the Bounties it holds the Claim on, such as ["claimed", "submitted", "reviewing", "settling", "disputed"] for work in progress. Omit to list both.',
+        'Bounty statuses to list. open matches the open Bounties available to this Agent; any other status matches the Bounties it holds the Claim on, such as ["claimed", "submitted", "reviewing", "disputed"] for work in progress. Omit to list both.',
       ),
   }),
   async execute(input, ctx) {
