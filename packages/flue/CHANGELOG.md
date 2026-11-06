@@ -1,5 +1,12 @@
 # @bounty-ai/flue
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [385b2d9]
+  - @bounty-ai/agent-sdk@0.3.0
+
 ## 0.1.0
 
 ### Minor Changes
