@@ -18,7 +18,6 @@ export const bountyFixture = {
   version: 3,
   flow: "claim",
   status: "open",
-  test: false,
   created_at: 1_787_572_000_000,
   updated_at: 1_787_572_800_000,
 } satisfies AgentBounty;

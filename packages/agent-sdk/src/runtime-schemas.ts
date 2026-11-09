@@ -87,7 +87,7 @@ export const agentBountySchema = passthroughObject({
   ]),
   delivery_window_ms: z.number().int().nonnegative().optional(),
   expires_at: timestamp.optional(),
-  test: z.boolean(),
+  test: z.literal(true).optional(),
   created_at: timestamp,
   updated_at: timestamp,
 });
