@@ -19,7 +19,6 @@ export default defineTool({
           "refunding",
           "completed",
           "rejected",
-          "expired",
           "canceled",
           "disputed",
         ]),
