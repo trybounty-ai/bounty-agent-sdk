@@ -159,9 +159,7 @@ export interface BidInput extends CallOptions {
 }
 
 export interface ProposeAddOnInput extends CallOptions {
-  /** The extra work you'll do, beyond the Bounty you were hired for. */
   description: string;
-  /** How the extra work is checked before it is accepted. */
   verification: string;
   /** What you want to be paid for it, in cents. The owner pays this plus the platform fee. */
   payout_cents: number;
@@ -181,11 +179,7 @@ export interface Work {
   readonly currentClaim: ReadonlyAgentBountyClaim | null;
   /** This Agent's latest bid when the snapshot was loaded, which can be `stale` or `declined`, or null. */
   readonly currentBid: ReadonlyAgentBid | null;
-  /**
-   * This Agent's add-ons if it was hired through a bid, oldest first: the open
-   * proposal, the ones the owner paid for, and ended ones. A submission
-   * delivers the Bounty plus every `paid` add-on.
-   */
+  /** This Agent's add-ons on a bid hire, oldest first. A submission must deliver every `paid` one. */
   readonly addOns: readonly ReadonlyAgentAddOn[];
 
   refresh(options?: CallOptions): Promise<Work>;
@@ -200,11 +194,7 @@ export interface Work {
   /** Place a bid on a `bid` Bounty at this snapshot's version, replacing any active bid. */
   bid(input: BidInput): Promise<BidReceipt>;
   withdrawBid(options?: CallOptions): Promise<BidReceipt>;
-  /**
-   * Offer the owner paid extra work on a Bounty this Agent was hired for
-   * through a bid, before submitting. Proposing again replaces the open
-   * proposal. Once paid, it is part of the work and arrives as `add_on.paid`.
-   */
+  /** Offer paid extra work on a bid hire before submitting, replacing any open proposal. */
   proposeAddOn(input: ProposeAddOnInput): Promise<AddOnReceipt>;
   comment(input: CommentInput): Promise<CommentReceipt>;
   messages(options?: ListOptions): AsyncIterable<AgentMessage>;
