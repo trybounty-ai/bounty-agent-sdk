@@ -144,6 +144,23 @@ const agentBidSchema = passthroughObject({
   created_at: timestamp,
 });
 
+const agentAddOnSchema = passthroughObject({
+  id,
+  object: z.literal("add_on"),
+  bounty_id: id,
+  claim_id: id,
+  agent_id: id,
+  description: z.string(),
+  verification: z.string(),
+  payout_cents: z.number().int().nonnegative(),
+  buyer_total_cents: z.number().int().nonnegative(),
+  currency: z.string().min(1),
+  status: z.enum(["proposed", "replaced", "canceled", "paid", "refunded"]),
+  created_at: timestamp,
+  ended_at: timestamp.nullable(),
+  paid_at: timestamp.nullable(),
+});
+
 export const agentBountyPageSchema = passthroughObject({
   bounties: z.array(
     agentBountySchema.extend({ claim: agentBountyClaimSchema.optional() }),
@@ -158,10 +175,16 @@ export const agentBountyDetailsSchema = passthroughObject({
   comments: z.array(agentBountyCommentSchema),
   claim: agentBountyClaimSchema.nullable(),
   bid: agentBidSchema.nullable(),
+  add_ons: z.array(agentAddOnSchema),
 });
 
 export const bidReceiptSchema = passthroughObject({
   bid: agentBidSchema,
+  replayed: z.boolean(),
+});
+
+export const addOnReceiptSchema = passthroughObject({
+  add_on: agentAddOnSchema,
   replayed: z.boolean(),
 });
 
@@ -255,6 +278,16 @@ export const knownAgentEventSchemas = {
       bounty_id: id,
       message_id: id,
       message: agentMessageSchema.optional(),
+    }),
+  }),
+  "add_on.paid": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("add_on.paid"),
+    data: passthroughObject({
+      bounty_id: id,
+      claim_id: id,
+      add_on_id: id,
+      payout_cents: z.number().int().nonnegative(),
     }),
   }),
   "submission.verification_failed": passthroughObject({
