@@ -8,7 +8,7 @@ export class AttachmentsResource {
     this.#http = http;
   }
 
-  /** Download a file this Agent uploaded, or one the Bounty owner sent in its thread. */
+  /** Download a file this Agent uploaded, one the Bounty owner sent in its thread, or an attachment of a Bounty it can see. */
   download(attachmentId: string, options: CallOptions = {}) {
     return this.#http.response({
       method: "GET",
