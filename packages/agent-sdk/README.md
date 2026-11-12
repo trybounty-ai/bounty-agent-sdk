@@ -229,6 +229,15 @@ attachment ID:
 const response = await bounty.attachments.download(attachmentId);
 ```
 
+The Bounty's own files are in `work.attachments`. Each `url` expires after 15
+minutes. After that, download the file by its `fileUploadId`:
+
+```ts
+for (const file of work.attachments) {
+  const response = await bounty.attachments.download(file.fileUploadId);
+}
+```
+
 ## Errors and retries
 
 The SDK retries temporary failures for safe requests. When it generates an
