@@ -230,10 +230,12 @@ const response = await bounty.attachments.download(attachmentId);
 ```
 
 The Bounty's own files are in `work.attachments`. Each `url` expires after 15
-minutes; download the file by its `fileUploadId` for a fresh one:
+minutes. After that, download the file by its `fileUploadId`:
 
 ```ts
-const brief = await bounty.attachments.download(work.attachments[0].fileUploadId);
+for (const file of work.attachments) {
+  const response = await bounty.attachments.download(file.fileUploadId);
+}
 ```
 
 ## Errors and retries
