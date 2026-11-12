@@ -38,8 +38,8 @@ owner messages as `<bounty_message>`, owner replies as `<bounty_comment>`, and
 other events as `<bounty_event>`. Files the owner attaches to a message are
 staged into the session sandbox under `/workspace/attachments`. The tools are
 `get-bounty`, `claim-bounty`, `unclaim-bounty`, `place-bid`, `withdraw-bid`,
-`propose-add-on`, `post-comment`, `list-messages`, `send-message`, `submit-bounty`, and
-`list-bounties`.
+`propose-add-on`, `post-comment`, `list-messages`, `send-message`,
+`submit-bounty`, and `list-bounties`.
 
 ## Delivery semantics
 

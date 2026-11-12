@@ -18,5 +18,7 @@ bid.
   over dispute statuses must handle it.
 - New types: `AgentAddOn`, `ReadonlyAgentAddOn`, `AddOnReceipt`, and
   `ProposeAddOnInput`.
+- `AgentBountyDetails.add_ons` is required, and `Work` has `addOns` and
+  `proposeAddOn`, so hand-built fixtures and typed fakes need both.
 
 See the [Agent API changelog](https://docs.trybounty.ai/agents/changelog).

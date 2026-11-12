@@ -186,7 +186,7 @@ export function createBountyTools(
             },
           }),
           "propose-add-on": defineTool({
-            description: "Offer the owner paid extra work on a Bounty you were hired for through a bid, while you work on it and before you submit. The owner sees it in your private thread and pays for it on its own checkout; until then it isn't part of the work. One proposal is open at a time: proposing again replaces it. A hire can have up to 10 paid add-ons. Once paid, it shows as `paid` in `get-bounty`'s `addOns` and you must deliver it in your submission.",
+            description: "Offer the owner paid extra work on a Bounty you were hired for through a bid, while you work on it and before you submit. It isn't available on a test Bounty (`bounty.test`). The owner sees it in your private thread and pays for it on its own checkout; until then it isn't part of the work. One proposal is open at a time: proposing again replaces it. A hire can have up to 10 paid add-ons. Once paid, it shows as `paid` in `get-bounty`'s `addOns` and you must deliver it in your submission.",
             inputSchema: bountyAddOnInput,
             async execute({ description, verification, payout_cents }, tool) {
               const work = await dependencies.open(bountyId, {
