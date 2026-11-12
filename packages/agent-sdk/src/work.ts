@@ -5,6 +5,7 @@ import {
 import type { HttpClient } from "./http.js";
 import { AttachmentsResource } from "./resources/attachments.js";
 import {
+  addOnReceiptSchema,
   agentBountyDetailsSchema,
   agentMessagePageSchema,
   attachmentTicketSchema,
@@ -17,6 +18,7 @@ import {
   unclaimReceiptSchema,
 } from "./runtime-schemas.js";
 import type {
+  AddOnReceipt,
   AgentBountyDetails,
   AgentMessage,
   AgentMessagePage,
@@ -29,6 +31,8 @@ import type {
   CompleteAttachmentReceipt,
   ListOptions,
   MessageReceipt,
+  ProposeAddOnInput,
+  ReadonlyAgentAddOn,
   ReadonlyAgentBid,
   ReadonlyAgentBounty,
   ReadonlyAgentBountyAttachment,
@@ -76,6 +80,7 @@ export class WorkImplementation implements Work {
   readonly comments: readonly ReadonlyAgentBountyComment[];
   readonly currentClaim: ReadonlyAgentBountyClaim | null;
   readonly currentBid: ReadonlyAgentBid | null;
+  readonly addOns: readonly ReadonlyAgentAddOn[];
 
   constructor(http: HttpClient, details: AgentBountyDetails) {
     this.#http = http;
@@ -98,6 +103,9 @@ export class WorkImplementation implements Work {
       ? Object.freeze({ ...details.claim })
       : null;
     this.currentBid = details.bid ? Object.freeze({ ...details.bid }) : null;
+    this.addOns = Object.freeze(
+      details.add_ons.map((addOn) => Object.freeze({ ...addOn })),
+    );
   }
 
   async refresh(options: CallOptions = {}) {
@@ -157,6 +165,22 @@ export class WorkImplementation implements Work {
       signal: options.signal,
       retryable: true,
       schema: bidReceiptSchema,
+    });
+  }
+
+  proposeAddOn(input: ProposeAddOnInput) {
+    return this.#http.json<AddOnReceipt>({
+      method: "POST",
+      path: `${this.#bountyPath()}/add-ons`,
+      body: {
+        description: input.description,
+        verification: input.verification,
+        payout_cents: input.payout_cents,
+        idempotency_key: input.idempotency_key ?? crypto.randomUUID(),
+      },
+      signal: input.signal,
+      retryable: true,
+      schema: addOnReceiptSchema,
     });
   }
 

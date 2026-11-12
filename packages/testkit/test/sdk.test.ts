@@ -485,6 +485,7 @@ describe("Bounty Agent SDK", () => {
           created_at: 1_787_572_300_000,
         },
         bid: null,
+        add_ons: [],
       }),
     );
     const work = await createClient(api).bounties.open("bounty_fixture");

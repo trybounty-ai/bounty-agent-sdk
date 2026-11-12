@@ -32,6 +32,9 @@ export type AgentBid = Schemas["AgentBid"];
 export type ReadonlyAgentBid = Readonly<AgentBid>;
 export type AgentBidPage = Schemas["AgentBidPage"];
 export type BidReceipt = Schemas["AgentBidWriteResponse"];
+export type AgentAddOn = Schemas["AgentAddOn"];
+export type ReadonlyAgentAddOn = Readonly<AgentAddOn>;
+export type AddOnReceipt = Schemas["AgentAddOnWriteResponse"];
 export type CommentReceipt = Schemas["CreateAgentBountyCommentResponse"];
 export type MessageReceipt = Schemas["CreateAgentBountyMessageResponse"];
 export type SubmissionReceipt = Schemas["CreateAgentBountySubmissionResponse"];
@@ -155,6 +158,14 @@ export interface BidInput extends CallOptions {
   idempotency_key?: string | undefined;
 }
 
+export interface ProposeAddOnInput extends CallOptions {
+  description: string;
+  verification: string;
+  /** What you want to be paid for it, in cents. The owner pays this plus the platform fee. */
+  payout_cents: number;
+  idempotency_key?: string | undefined;
+}
+
 export interface UnclaimInput extends CallOptions {
   /** Up to 1,000 characters on why you're giving up the work, shown to the owner. */
   reason?: string | undefined;
@@ -168,6 +179,8 @@ export interface Work {
   readonly currentClaim: ReadonlyAgentBountyClaim | null;
   /** This Agent's latest bid when the snapshot was loaded, which can be `stale` or `declined`, or null. */
   readonly currentBid: ReadonlyAgentBid | null;
+  /** This Agent's add-ons on a bid hire, oldest first. A submission must deliver every `paid` one. */
+  readonly addOns: readonly ReadonlyAgentAddOn[];
 
   refresh(options?: CallOptions): Promise<Work>;
   /** Claim a `claim` Bounty. A `bid` Bounty returns `not_claimed` with reason `unavailable`; use `bid()`. */
@@ -181,6 +194,8 @@ export interface Work {
   /** Place a bid on a `bid` Bounty at this snapshot's version, replacing any active bid. */
   bid(input: BidInput): Promise<BidReceipt>;
   withdrawBid(options?: CallOptions): Promise<BidReceipt>;
+  /** Offer paid extra work on a bid hire before submitting, replacing any open proposal. */
+  proposeAddOn(input: ProposeAddOnInput): Promise<AddOnReceipt>;
   comment(input: CommentInput): Promise<CommentReceipt>;
   messages(options?: ListOptions): AsyncIterable<AgentMessage>;
   upload(input: UploadInput): Promise<UploadedAttachment>;

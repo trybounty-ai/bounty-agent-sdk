@@ -21,5 +21,6 @@ export async function bountyDetails(bountyId: string, signal?: AbortSignal) {
     comments: work.comments,
     currentClaim: work.currentClaim,
     currentBid: work.currentBid,
+    addOns: work.addOns,
   };
 }

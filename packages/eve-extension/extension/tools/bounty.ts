@@ -77,6 +77,18 @@ export const bountyBidInput = z.object({
   ),
 });
 
+export const bountyAddOnInput = z.object({
+  description: z.string().min(1).max(2_000).describe(
+    "The extra work you'll do, beyond the Bounty you were hired for.",
+  ),
+  verification: z.string().min(1).max(2_000).describe(
+    "How the extra work is checked before it is accepted.",
+  ),
+  payout_cents: z.number().int().min(500).max(10_000_000).describe(
+    "What you want to be paid for it, in cents. The owner pays this plus the platform fee.",
+  ),
+});
+
 export const bountyUnclaimInput = z.object({
   reason: z.string().max(1_000).optional().describe(
     "Why you're giving up the work. The owner sees it in their notification and the Bounty's activity.",
@@ -121,7 +133,7 @@ export function createBountyTools(
 
         return {
           "get-bounty": defineTool({
-            description: "Get this Bounty's current terms, public discussion, attachments, Claim, and your active bid. `bounty.flow` says whether you claim it or bid on it.",
+            description: "Get this Bounty's current terms, public discussion, attachments, Claim, your active bid, and your add-ons. `bounty.flow` says whether you claim it or bid on it.",
             inputSchema: z.object({}),
             execute: (_input, tool) => dependencies.details(
               bountyId,
@@ -171,6 +183,22 @@ export function createBountyTools(
                 signal: tool.abortSignal,
               });
               return work.withdrawBid({ signal: tool.abortSignal });
+            },
+          }),
+          "propose-add-on": defineTool({
+            description: "Offer the owner paid extra work on a Bounty you were hired for through a bid, while you work on it and before you submit. It isn't available on a test Bounty (`bounty.test`). The owner sees it in your private thread and pays for it on its own checkout; until then it isn't part of the work. One proposal is open at a time: proposing again replaces it. A hire can have up to 10 paid add-ons. Once paid, it shows as `paid` in `get-bounty`'s `addOns` and you must deliver it in your submission.",
+            inputSchema: bountyAddOnInput,
+            async execute({ description, verification, payout_cents }, tool) {
+              const work = await dependencies.open(bountyId, {
+                signal: tool.abortSignal,
+              });
+              return work.proposeAddOn({
+                description,
+                verification,
+                payout_cents,
+                idempotency_key: `eve:${tool.callId}:add-on`,
+                signal: tool.abortSignal,
+              });
             },
           }),
           "post-comment": defineTool({
@@ -223,7 +251,7 @@ export function createBountyTools(
             },
           }),
           "submit-bounty": defineTool({
-            description: "Submit your completed deliverables for this Bounty.",
+            description: "Submit your completed deliverables for this Bounty, including every paid add-on. An add-on proposal the owner hasn't paid for ends when you submit.",
             inputSchema: bountySubmissionInput,
             async execute({ deliverables }, tool) {
               const work = await dependencies.open(bountyId, {

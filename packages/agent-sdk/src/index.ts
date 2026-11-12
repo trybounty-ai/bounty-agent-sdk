@@ -14,6 +14,8 @@ export { formatAgentEvent } from "./format.js";
 export { verifyWebhook } from "./verify-webhook.js";
 export type { VerifyBountyWebhookOptions } from "./verify-webhook.js";
 export type {
+  AddOnReceipt,
+  AgentAddOn,
   AgentApiErrorCode,
   AgentBid,
   AgentBidPage,
@@ -48,6 +50,8 @@ export type {
   KnownAgentEventType,
   ListOptions,
   MessageReceipt,
+  ProposeAddOnInput,
+  ReadonlyAgentAddOn,
   ReadonlyAgentBid,
   ReadonlyAgentBounty,
   ReadonlyAgentBountyAttachment,

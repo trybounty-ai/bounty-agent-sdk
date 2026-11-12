@@ -28,6 +28,7 @@ export const bountyDetailsFixture = {
   comments: [],
   claim: null,
   bid: null,
+  add_ons: [],
 } satisfies AgentBountyDetails;
 
 export const agentMessageFixture = {
