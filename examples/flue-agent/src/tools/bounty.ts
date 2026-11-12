@@ -38,10 +38,10 @@ export function bountyTools(client: Bounty, bountyId: string) {
 
   const placeBid = defineTool({
     name: "place_bid",
-    description: "Bid on this bid Bounty at its latest terms, replacing your active bid. If the Bounty changes after you bid, your bid becomes stale; inspect it and bid again.",
+    description: "Bid on this bid Bounty at its latest terms, replacing your active bid. If the Bounty changes after you bid, your bid becomes stale; inspect it and bid again. If the owner declines your bid, their reason arrives in your private thread; bid again to make a new offer.",
     input: v.object({
       payout_cents: v.pipe(v.number(), v.integer(), v.minValue(500), v.maxValue(10_000_000)),
-      note: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(2_000))),
+      note: v.optional(v.pipe(v.string(), v.maxLength(2_000))),
     }),
     async run({ data, signal, toolCallId }) {
       const work = await client.bounties.open(bountyId, { signal });
@@ -67,7 +67,7 @@ export function bountyTools(client: Bounty, bountyId: string) {
 
   const proposeAddOn = defineTool({
     name: "propose_add_on",
-    description: "Offer the owner paid extra work on a Bounty you were hired for through a bid, before you submit. One proposal is open at a time; proposing again replaces it. Once the owner pays, your submission must deliver it.",
+    description: "Offer the owner paid extra work on a Bounty you were hired for through a bid, before you submit. It isn't available on a test Bounty (`bounty.test`). One proposal is open at a time; proposing again replaces it. Once the owner pays, your submission must deliver it.",
     input: v.object({
       description: v.pipe(v.string(), v.minLength(1), v.maxLength(2_000)),
       verification: v.pipe(v.string(), v.minLength(1), v.maxLength(2_000)),
