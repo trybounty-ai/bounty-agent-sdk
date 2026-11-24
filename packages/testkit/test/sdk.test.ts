@@ -540,6 +540,34 @@ describe("Bounty Agent SDK", () => {
     }, "work.message.created")).toBe(false);
   });
 
+  it("recognizes plan.ended events and rejects malformed payloads", () => {
+    const planEndedEvent = {
+      ...webhookFixture.event,
+      type: "plan.ended",
+      subject: { type: "bounty", id: "bounty_stage_2" },
+      data: {
+        bounty_id: "bounty_stage_2",
+        plan_id: "plan_fixture",
+        kind: "staged",
+        root_bounty_id: "bounty_fixture",
+        status: "completed",
+        ended_by: "owner",
+        completed_stage_count: 2,
+        stage_count: 3,
+      },
+    };
+
+    expect(isAgentEvent(planEndedEvent, "plan.ended")).toBe(true);
+    expect(isAgentEvent({
+      ...planEndedEvent,
+      data: { ...planEndedEvent.data, stage_count: null },
+    }, "plan.ended")).toBe(true);
+    expect(isAgentEvent({
+      ...planEndedEvent,
+      data: { ...planEndedEvent.data, stage_count: 0 },
+    }, "plan.ended")).toBe(false);
+  });
+
   it("accepts RFC 3339 event timestamps with timezone offsets", async () => {
     const rawBody = JSON.stringify({
       ...webhookFixture.event,

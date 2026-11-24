@@ -345,6 +345,20 @@ export const knownAgentEventSchemas = {
       ]),
     }),
   }),
+  "plan.ended": passthroughObject({
+    ...knownEventBase,
+    type: z.literal("plan.ended"),
+    data: passthroughObject({
+      bounty_id: id,
+      plan_id: id,
+      kind: z.literal("staged"),
+      root_bounty_id: id,
+      status: z.enum(["completed", "canceled"]),
+      ended_by: z.enum(["owner", "agent", "system"]),
+      completed_stage_count: z.number().int().nonnegative(),
+      stage_count: z.number().int().positive().nullable(),
+    }),
+  }),
 } as const;
 
 export const agentMessagePageSchema = passthroughObject({
